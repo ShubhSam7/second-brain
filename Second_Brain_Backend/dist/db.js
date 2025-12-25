@@ -32,12 +32,39 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.linkModel = exports.contentModel = exports.userModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const ObjectId = mongoose_1.default.Types.ObjectId;
-mongoose_1.default.connect("mongodb+srv://shubhsamaiya7:shubh7777@cluster0.m2yueto.mongodb.net/second-brain");
-const contentTypes = ["image", "video", "article", "audio", "other"];
+// Use environment variable for MongoDB connection
+const mongoUrl = process.env.MONGO_URL || "mongodb+srv://shubhsamaiya7:shubh7777@cluster0.m2yueto.mongodb.net/second-brain";
+mongoose_1.default.connect(mongoUrl);
+// Expanded content types for all platforms
+const contentTypes = [
+    // Social
+    "twitter", "instagram", "linkedin", "facebook", "tiktok", "reddit",
+    // Video
+    "youtube", "vimeo", "twitch", "dailymotion",
+    // Code
+    "github", "gitlab", "codepen", "codesandbox", "stackoverflow", "replit",
+    // Article
+    "medium", "dev", "hashnode", "substack", "article",
+    // Audio
+    "spotify", "soundcloud", "apple-music",
+    // Image
+    "imgur", "pinterest", "flickr", "image",
+    // Document
+    "google-docs", "notion", "dropbox", "document",
+    // Video/Audio generic
+    "video", "audio",
+    // Other
+    "other"
+];
 const userSchema = new mongoose_1.Schema({
     username: { type: String, unique: true, required: true },
     password: { type: String, required: true },
@@ -45,9 +72,15 @@ const userSchema = new mongoose_1.Schema({
 const contentSchema = new mongoose_1.Schema({
     link: { type: String, required: true },
     type: { enum: contentTypes, type: String, required: true },
+    category: { type: String, required: true }, // social, video, code, article, audio, image, document, other
+    domain: { type: String }, // Extracted domain (e.g., "twitter.com")
     title: { type: String, required: true },
+    description: { type: String }, // Optional description
+    thumbnail: { type: String }, // Optional thumbnail URL
     tags: [{ type: ObjectId, ref: "Tag" }],
     userId: { type: ObjectId, ref: "User", required: true },
+}, {
+    timestamps: true // Adds createdAt and updatedAt automatically
 });
 // const tagSchema = new Schema({
 //   title: { type: String, required: true, unique: true },

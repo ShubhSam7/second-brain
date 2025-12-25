@@ -38,3 +38,5 @@ Second_Brain_Frontend/output.css
 # Backend
 Second_Brain_Backend/dist/
 Second_Brain_Backend/*.tsbuildinfo
+
+.claude
