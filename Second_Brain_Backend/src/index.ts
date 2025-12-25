@@ -1,8 +1,12 @@
-import express from "express";
+// Load environment variables first
+import { config } from "dotenv";
+config();
+
+import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cors from "cors";
-import { userModel, contentModel, linkModel } from "./db";
+import prisma from "./db";
 import { JWT_SECRET, PORT } from "./config";
 import { auth } from "./middleware";
 import { random } from "./utils";
@@ -26,6 +30,34 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Prisma error handler utility
+function handlePrismaError(error: any, res: Response): void {
+  if (error.code === 'P2002') {
+    // Unique constraint violation
+    res.status(409).json({
+      success: false,
+      message: `${error.meta?.target?.[0] || 'Field'} already exists`
+    });
+  } else if (error.code === 'P2025') {
+    // Record not found
+    res.status(404).json({
+      success: false,
+      message: 'Resource not found'
+    });
+  } else if (error.code === 'P2003') {
+    // Foreign key constraint violation
+    res.status(400).json({
+      success: false,
+      message: 'Invalid reference'
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      message: 'Database error occurred'
+    });
+  }
+}
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Second Brain API is running" });
@@ -40,7 +72,10 @@ app.post("/api/v1/signup", async (req, res) => {
     const { username, password } = validatedData;
 
     // Check if user already exists
-    const existingUser = await userModel.findOne({ username });
+    const existingUser = await prisma.user.findUnique({
+      where: { username }
+    });
+
     if (existingUser) {
       res.status(409).json({
         success: false,
@@ -53,9 +88,11 @@ app.post("/api/v1/signup", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
-    await userModel.create({
-      username,
-      password: hashedPassword,
+    await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+      }
     });
 
     res.status(201).json({
@@ -69,6 +106,10 @@ app.post("/api/v1/signup", async (req, res) => {
         message: "Validation error",
         errors: e.errors,
       });
+      return;
+    }
+    if (e.code && e.code.startsWith('P')) {
+      handlePrismaError(e, res);
       return;
     }
     res.status(500).json({
@@ -86,7 +127,10 @@ app.post("/api/v1/signin", async (req, res) => {
     const { username, password } = validatedData;
 
     // Find user
-    const user = await userModel.findOne({ username });
+    const user = await prisma.user.findUnique({
+      where: { username }
+    });
+
     if (!user) {
       res.status(401).json({
         success: false,
@@ -107,7 +151,7 @@ app.post("/api/v1/signin", async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: user._id },
+      { id: user.id },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -137,7 +181,7 @@ app.post("/api/v1/signin", async (req, res) => {
 
 // ============= CONTENT ENDPOINTS =============
 
-app.post("/api/v1/content", auth, async (req, res) => {
+app.post("/api/v1/content", auth, async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate input with Zod
     const validatedData = createContentSchema.parse(req.body);
@@ -162,24 +206,25 @@ app.post("/api/v1/content", auth, async (req, res) => {
     const domain = linkInfo.domain;
 
     // Create content
-    const content = await contentModel.create({
-      link,
-      type: finalType,
-      category,
-      domain,
-      title,
-      description,
-      thumbnail,
-      tags: [],
-      //@ts-ignore
-      userId: req.userId,
+    const content = await prisma.content.create({
+      data: {
+        link,
+        type: finalType,
+        category,
+        domain,
+        title,
+        description,
+        thumbnail,
+        //@ts-ignore
+        userId: req.userId,
+      }
     });
 
     res.status(201).json({
       success: true,
       message: "Content added successfully",
       content: {
-        id: content._id,
+        id: content.id,
         link: content.link,
         type: content.type,
         category: content.category,
@@ -199,6 +244,10 @@ app.post("/api/v1/content", auth, async (req, res) => {
       });
       return;
     }
+    if (e.code && e.code.startsWith('P')) {
+      handlePrismaError(e, res);
+      return;
+    }
     res.status(500).json({
       success: false,
       message: "Failed to add content",
@@ -207,36 +256,36 @@ app.post("/api/v1/content", auth, async (req, res) => {
   }
 });
 
-app.get("/api/v1/content", auth, async (req, res) => {
+app.get("/api/v1/content", auth, async (req: Request, res: Response): Promise<void> => {
   try {
     // Parse query parameters
     const filters = contentFilterSchema.parse(req.query);
     const { type, category, limit = 100, offset = 0 } = filters;
 
-    // Build query
-    const query: any = {
+    // Build where clause
+    const where: any = {
       //@ts-ignore
       userId: req.userId,
     };
 
     if (type) {
-      query.type = type;
+      where.type = type;
     }
 
     if (category) {
-      query.category = category;
+      where.category = category;
     }
 
     // Fetch content with pagination
-    const content = await contentModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(offset)
-      .select("-__v");
-
-    // Get total count for pagination
-    const total = await contentModel.countDocuments(query);
+    const [content, total] = await Promise.all([
+      prisma.content.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.content.count({ where })
+    ]);
 
     res.json({
       success: true,
@@ -265,20 +314,22 @@ app.get("/api/v1/content", auth, async (req, res) => {
   }
 });
 
-app.delete("/api/v1/content", auth, async (req, res) => {
+app.delete("/api/v1/content", auth, async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate input
     const validatedData = contentIdSchema.parse(req.body);
     const { contentId } = validatedData;
 
     // Delete content (only if it belongs to the user)
-    const result = await contentModel.deleteOne({
-      _id: contentId,
-      //@ts-ignore
-      userId: req.userId,
+    const result = await prisma.content.deleteMany({
+      where: {
+        id: contentId,
+        //@ts-ignore
+        userId: req.userId,
+      }
     });
 
-    if (result.deletedCount === 0) {
+    if (result.count === 0) {
       res.status(404).json({
         success: false,
         message: "Content not found or unauthorized",
@@ -299,6 +350,10 @@ app.delete("/api/v1/content", auth, async (req, res) => {
       });
       return;
     }
+    if (e.code && e.code.startsWith('P')) {
+      handlePrismaError(e, res);
+      return;
+    }
     res.status(500).json({
       success: false,
       message: "Failed to delete content",
@@ -309,16 +364,18 @@ app.delete("/api/v1/content", auth, async (req, res) => {
 
 // ============= SHARING ENDPOINTS =============
 
-app.post("/api/v1/brain/share", auth, async (req, res) => {
+app.post("/api/v1/brain/share", auth, async (req: Request, res: Response): Promise<void> => {
   try {
     const validatedData = shareLinkSchema.parse(req.body);
     const { share } = validatedData;
 
     if (share) {
       // Check if share link already exists
-      const existingLink = await linkModel.findOne({
-        //@ts-ignore
-        userId: req.userId,
+      const existingLink = await prisma.link.findUnique({
+        where: {
+          //@ts-ignore
+          userId: req.userId,
+        }
       });
 
       if (existingLink) {
@@ -331,22 +388,27 @@ app.post("/api/v1/brain/share", auth, async (req, res) => {
       }
 
       // Create new share link
-      const hash = await linkModel.create({
-        //@ts-ignore
-        userId: req.userId,
-        hash: random(10),
+      const hash = random(10);
+      const newLink = await prisma.link.create({
+        data: {
+          //@ts-ignore
+          userId: req.userId,
+          hash: hash,
+        }
       });
 
       res.json({
         success: true,
         message: "Share link created successfully",
-        hash: hash.hash,
+        hash: newLink.hash,
       });
     } else {
       // Remove share link
-      await linkModel.deleteOne({
-        //@ts-ignore
-        userId: req.userId,
+      await prisma.link.deleteMany({
+        where: {
+          //@ts-ignore
+          userId: req.userId,
+        }
       });
 
       res.json({
@@ -363,6 +425,10 @@ app.post("/api/v1/brain/share", auth, async (req, res) => {
       });
       return;
     }
+    if (e.code && e.code.startsWith('P')) {
+      handlePrismaError(e, res);
+      return;
+    }
     res.status(500).json({
       success: false,
       message: "Failed to update share link",
@@ -375,8 +441,17 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
   try {
     const hash = req.params.shareLink;
 
-    // Find link by hash
-    const link = await linkModel.findOne({ hash });
+    // Find link by hash with user and content
+    const link = await prisma.link.findUnique({
+      where: { hash },
+      include: {
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
 
     if (!link) {
       res.status(404).json({
@@ -387,17 +462,26 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
     }
 
     // Fetch user's content
-    const content = await contentModel
-      .find({ userId: link.userId })
-      .sort({ createdAt: -1 })
-      .select("-userId -__v");
-
-    // Fetch user info
-    const user = await userModel.findOne({ _id: link.userId }).select("username");
+    const content = await prisma.content.findMany({
+      where: { userId: link.userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        link: true,
+        type: true,
+        category: true,
+        domain: true,
+        title: true,
+        description: true,
+        thumbnail: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
 
     res.json({
       success: true,
-      username: user?.username,
+      username: link.user.username,
       content: content,
     });
   } catch (e: any) {
@@ -412,29 +496,29 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
 // ============= UTILITY ENDPOINTS =============
 
 // Get content grouped by category
-app.get("/api/v1/content/categories", auth, async (req, res) => {
+app.get("/api/v1/content/categories", auth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const categories = await contentModel.aggregate([
-      {
+    const categories = await prisma.content.groupBy({
+      by: ['category'],
+      where: {
         //@ts-ignore
-        $match: { userId: req.userId },
+        userId: req.userId
       },
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 },
+      _count: {
+        category: true,
+      },
+      orderBy: {
+        _count: {
+          category: 'desc',
         },
       },
-      {
-        $sort: { count: -1 },
-      },
-    ]);
+    });
 
     res.json({
       success: true,
       categories: categories.map((cat) => ({
-        category: cat._id,
-        count: cat.count,
+        category: cat.category,
+        count: cat._count.category,
       })),
     });
   } catch (e: any) {
