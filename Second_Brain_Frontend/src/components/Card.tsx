@@ -9,21 +9,19 @@ interface Style {
 
 export default function Card({ title, link, type }: Style): any {
   return (
-    <div className="w-90 h-[350px] bg-white border border-gray-200 shadow-md rounded-xl flex flex-col gap-3 p-4 overflow-hidden">
-      <div className=" flex justify-between items-center">
-        <div className="text-gray-500 flex">
+    <div className="w-90 h-[350px] bg-surface border border-border-muted shadow-xl rounded-xl flex flex-col gap-3 p-4 overflow-hidden hover:border-accent-primary/30 transition-all duration-300 group">
+      <div className="flex justify-between items-center">
+        <div className="text-text-secondary flex items-center">
           <DeleteIcon />
           <div className="pl-2">{title}</div>
         </div>
-        <div className="flex items-center">
-          <div className="text-gray-500 pr-3">
-            <a href={link} target="_blank">
-              <ShareIcon />
-            </a>
-          </div>
-          <div className="text-gray-500">
+        <div className="flex items-center gap-3">
+          <a href={link} target="_blank" className="text-text-secondary hover:text-accent-primary transition-colors duration-300">
+            <ShareIcon />
+          </a>
+          <button className="text-text-secondary hover:text-red-400 transition-colors duration-300">
             <DeleteIcon />
-          </div>
+          </button>
         </div>
       </div>
       {/* //embed the frame */}
@@ -31,7 +29,7 @@ export default function Card({ title, link, type }: Style): any {
         {type === "youtube" && (
           <div className="aspect-video w-full mt-4">
             <iframe
-              className="w-full h-[240px] rounded-md"
+              className="w-full h-[240px] rounded-lg border border-border-muted"
               src={link.replace("watch?v=", "embed/")}
               title="YouTube video player"
               frameBorder="0"

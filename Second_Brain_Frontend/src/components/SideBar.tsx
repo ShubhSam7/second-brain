@@ -20,13 +20,13 @@ interface SideBarProps {
 
 export default function SideBar({ activeCategory = "all", onCategoryChange }: SideBarProps) {
   return (
-    <div className="h-screen bg-white w-72 border fixed overflow-y-auto">
-      <div className="flex text-2xl font-bold items-center p-4">
+    <div className="h-screen bg-background-secondary w-72 border-r border-border-muted fixed overflow-y-auto">
+      <div className="flex text-2xl font-bold items-center p-6 border-b border-border-muted">
         <BrainIcon />
-        <div className="ml-4">Second Brain</div>
+        <div className="ml-4 text-text-primary tracking-wide">Second Brain</div>
       </div>
 
-      <div className="p-2 mt-4">
+      <div className="p-4 mt-2">
         <SideBarItem
           text="All Content"
           icon={<AllContentIcon />}
@@ -34,7 +34,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("all")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Social Media
         </div>
         <SideBarItem
@@ -56,7 +56,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("social")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Videos
         </div>
         <SideBarItem
@@ -66,7 +66,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("video")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Code & Dev
         </div>
         <SideBarItem
@@ -76,7 +76,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("code")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Articles
         </div>
         <SideBarItem
@@ -86,7 +86,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("article")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Audio
         </div>
         <SideBarItem
@@ -96,7 +96,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("audio")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Media
         </div>
         <SideBarItem
@@ -112,7 +112,7 @@ export default function SideBar({ activeCategory = "all", onCategoryChange }: Si
           onClick={() => onCategoryChange("document")}
         />
 
-        <div className="mt-4 mb-2 px-4 text-xs font-semibold text-gray-500 uppercase">
+        <div className="mt-6 mb-2 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Other
         </div>
         <SideBarItem

@@ -5,14 +5,57 @@ module.exports = {
   ],
   theme: {
     extend: {
-      color: {
-        gray: {
-          200: "#F8FAFA"
-        },  
-        purple: {
-          300: "#EEF3FE",
-          500: "#E1E8FF",
-          600: "#4E45E6",
+      colors: {
+        background: {
+          primary: '#0B0B0D',
+          secondary: '#121214',
+        },
+        surface: '#16161A',
+        text: {
+          primary: '#FFFFFF',
+          secondary: '#A1A1AA',
+          muted: '#6B6B73',
+        },
+        accent: {
+          primary: '#FF6A00',
+          glow: '#FF6A0033',
+        },
+        border: {
+          muted: '#232327',
+        },
+      },
+      letterSpacing: {
+        wide: '0.05em',
+        wider: '0.1em',
+        widest: '0.15em',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.8s ease-out',
+        'slide-up': 'slideUp 0.6s ease-out',
+        'slide-in-left': 'slideInLeft 0.7s ease-out',
+        'glow': 'glow 2s ease-in-out infinite',
+        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(30px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideInLeft: {
+          '0%': { opacity: '0', transform: 'translateX(-30px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        glow: {
+          '0%, 100%': { opacity: '0.5' },
+          '50%': { opacity: '1' },
+        },
+        glowPulse: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(255, 106, 0, 0.2)' },
+          '50%': { boxShadow: '0 0 40px rgba(255, 106, 0, 0.4)' },
         },
       },
     },

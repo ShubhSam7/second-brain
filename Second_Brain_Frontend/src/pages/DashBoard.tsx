@@ -9,38 +9,41 @@ import SideBar from "../components/SideBar";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<any>("all");
+
   return (
     <div>
+      <SideBar
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+      />
 
-      <SideBar />
-
-      <div className="ml-72 min-h-screen bg-gray-200 border-2">
+      <div className="ml-72 min-h-screen bg-background-primary">
         <CreateContentModel
           open={modelOpen}
           onClose={() => setModelOpen(false)}
         ></CreateContentModel>
-        
-        <div className = "flex justify-between itmes-center m-4">
-          <div className="text-3xl font-bold">All Notes</div>
-          <div className="flex mr-2">
+
+        <div className="flex justify-between items-center p-8 border-b border-border-muted">
+          <div className="text-3xl font-bold text-text-primary tracking-wide">All Notes</div>
+          <div className="flex gap-3">
             <Button
               startIcon={<ShareIcon />}
-              variant="primary"
+              variant="secondary"
               text="Share Brain"
               size="md"
-              padding = "mr-4"
             ></Button>
             <Button
               onClick={() => setModelOpen(true)}
               startIcon={<PlusIcon />}
-              variant="secondary"
+              variant="primary"
               text="Add Content"
               size="md"
             ></Button>
           </div>
         </div>
 
-        <div className=" flex flex-wrap gap-4 p-4">
+        <div className="flex flex-wrap gap-6 p-8">
           <Card
             title="Share"
             type="youtube"
@@ -52,7 +55,7 @@ export default function DashBoard() {
             link="https://x.com/heyhexadecimal/status/1941052582983790720"
           />
         </div>
-        
+
       </div>
     </div>
   );

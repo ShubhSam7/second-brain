@@ -39,9 +39,10 @@ export default function SignUp() {
   };
 
   return (
-    <div className="h-screen w-screen bg-gray-200 flex justify-center items-center">
-      <div className="bg-white rounded border min-w-96 p-6">
-        <div className="font-bold text-2xl mb-4">Sign Up</div>
+    <div className="h-screen w-screen bg-background-primary flex justify-center items-center">
+      <div className="bg-surface border border-border-muted rounded-xl min-w-96 max-w-md p-8 shadow-2xl animate-slide-up">
+        <div className="font-bold text-3xl mb-2 text-text-primary tracking-wide">Sign Up</div>
+        <p className="text-text-secondary mb-6">Create your Second Brain account</p>
 
         <form onSubmit={handleSubmit}>
           <Input
@@ -67,12 +68,12 @@ export default function SignUp() {
           />
 
           {(error || validationError) && (
-            <div className="text-red-500 text-sm mt-2 mb-2">
+            <div className="text-red-400 text-sm mt-2 mb-4 bg-red-900/20 border border-red-900/50 rounded-lg p-3">
               {error || validationError}
             </div>
           )}
 
-          <div className="flex justify-center items-center mt-4">
+          <div className="flex justify-center items-center mt-6">
             <Button
               variant="primary"
               size="md"
@@ -84,9 +85,9 @@ export default function SignUp() {
           </div>
         </form>
 
-        <div className="text-center mt-4 text-sm text-gray-600">
+        <div className="text-center mt-6 text-sm text-text-secondary">
           Already have an account?{" "}
-          <a href="/signin" className="text-purple-600 hover:underline">
+          <a href="/signin" className="text-accent-primary hover:text-accent-primary/80 transition-colors duration-300 font-medium">
             Sign In
           </a>
         </div>
