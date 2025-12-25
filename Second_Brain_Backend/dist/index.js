@@ -14,12 +14,12 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import cors from "cors";
-import prisma from "./db";
-import { JWT_SECRET, PORT } from "./config";
-import { auth } from "./middleware";
-import { random } from "./utils";
-import { signupSchema, signinSchema, createContentSchema, contentIdSchema, shareLinkSchema, contentFilterSchema } from "./validation";
-import { categorizeLink, isValidUrl, normalizeUrl } from "./linkCategorizer";
+import prisma from "./db.js";
+import { JWT_SECRET, PORT } from "./config.js";
+import { auth } from "./middleware.js";
+import { random } from "./utils.js";
+import { signupSchema, signinSchema, createContentSchema, contentIdSchema, shareLinkSchema, contentFilterSchema, } from "./validation.js";
+import { categorizeLink, isValidUrl, normalizeUrl } from "./linkCategorizer.js";
 const app = express();
 // Middleware
 app.use(cors());
@@ -27,31 +27,31 @@ app.use(express.json());
 // Prisma error handler utility
 function handlePrismaError(error, res) {
     var _a, _b;
-    if (error.code === 'P2002') {
+    if (error.code === "P2002") {
         // Unique constraint violation
         res.status(409).json({
             success: false,
-            message: `${((_b = (_a = error.meta) === null || _a === void 0 ? void 0 : _a.target) === null || _b === void 0 ? void 0 : _b[0]) || 'Field'} already exists`
+            message: `${((_b = (_a = error.meta) === null || _a === void 0 ? void 0 : _a.target) === null || _b === void 0 ? void 0 : _b[0]) || "Field"} already exists`,
         });
     }
-    else if (error.code === 'P2025') {
+    else if (error.code === "P2025") {
         // Record not found
         res.status(404).json({
             success: false,
-            message: 'Resource not found'
+            message: "Resource not found",
         });
     }
-    else if (error.code === 'P2003') {
+    else if (error.code === "P2003") {
         // Foreign key constraint violation
         res.status(400).json({
             success: false,
-            message: 'Invalid reference'
+            message: "Invalid reference",
         });
     }
     else {
         res.status(500).json({
             success: false,
-            message: 'Database error occurred'
+            message: "Database error occurred",
         });
     }
 }
@@ -67,7 +67,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const { username, password } = validatedData;
         // Check if user already exists
         const existingUser = yield prisma.user.findUnique({
-            where: { username }
+            where: { username },
         });
         if (existingUser) {
             res.status(409).json({
@@ -83,7 +83,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             data: {
                 username,
                 password: hashedPassword,
-            }
+            },
         });
         res.status(201).json({
             success: true,
@@ -99,7 +99,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             });
             return;
         }
-        if (e.code && e.code.startsWith('P')) {
+        if (e.code && e.code.startsWith("P")) {
             handlePrismaError(e, res);
             return;
         }
@@ -117,7 +117,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const { username, password } = validatedData;
         // Find user
         const user = yield prisma.user.findUnique({
-            where: { username }
+            where: { username },
         });
         if (!user) {
             res.status(401).json({
@@ -193,7 +193,7 @@ app.post("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0
                 thumbnail,
                 //@ts-ignore
                 userId: req.userId,
-            }
+            },
         });
         res.status(201).json({
             success: true,
@@ -220,7 +220,7 @@ app.post("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0
             });
             return;
         }
-        if (e.code && e.code.startsWith('P')) {
+        if (e.code && e.code.startsWith("P")) {
             handlePrismaError(e, res);
             return;
         }
@@ -251,11 +251,11 @@ app.get("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0,
         const [content, total] = yield Promise.all([
             prisma.content.findMany({
                 where,
-                orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: "desc" },
                 skip: offset,
                 take: limit,
             }),
-            prisma.content.count({ where })
+            prisma.content.count({ where }),
         ]);
         res.json({
             success: true,
@@ -295,7 +295,7 @@ app.delete("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void
                 id: contentId,
                 //@ts-ignore
                 userId: req.userId,
-            }
+            },
         });
         if (result.count === 0) {
             res.status(404).json({
@@ -318,7 +318,7 @@ app.delete("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void
             });
             return;
         }
-        if (e.code && e.code.startsWith('P')) {
+        if (e.code && e.code.startsWith("P")) {
             handlePrismaError(e, res);
             return;
         }
@@ -340,7 +340,7 @@ app.post("/api/v1/brain/share", auth, (req, res) => __awaiter(void 0, void 0, vo
                 where: {
                     //@ts-ignore
                     userId: req.userId,
-                }
+                },
             });
             if (existingLink) {
                 res.json({
@@ -357,7 +357,7 @@ app.post("/api/v1/brain/share", auth, (req, res) => __awaiter(void 0, void 0, vo
                     //@ts-ignore
                     userId: req.userId,
                     hash: hash,
-                }
+                },
             });
             res.json({
                 success: true,
@@ -371,7 +371,7 @@ app.post("/api/v1/brain/share", auth, (req, res) => __awaiter(void 0, void 0, vo
                 where: {
                     //@ts-ignore
                     userId: req.userId,
-                }
+                },
             });
             res.json({
                 success: true,
@@ -388,7 +388,7 @@ app.post("/api/v1/brain/share", auth, (req, res) => __awaiter(void 0, void 0, vo
             });
             return;
         }
-        if (e.code && e.code.startsWith('P')) {
+        if (e.code && e.code.startsWith("P")) {
             handlePrismaError(e, res);
             return;
         }
@@ -423,7 +423,7 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         // Fetch user's content
         const content = yield prisma.content.findMany({
             where: { userId: link.userId },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             select: {
                 id: true,
                 link: true,
@@ -435,7 +435,7 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
                 thumbnail: true,
                 createdAt: true,
                 updatedAt: true,
-            }
+            },
         });
         res.json({
             success: true,
@@ -456,17 +456,17 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
 app.get("/api/v1/content/categories", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const categories = yield prisma.content.groupBy({
-            by: ['category'],
+            by: ["category"],
             where: {
                 //@ts-ignore
-                userId: req.userId
+                userId: req.userId,
             },
             _count: {
                 category: true,
             },
             orderBy: {
                 _count: {
-                    category: 'desc',
+                    category: "desc",
                 },
             },
         });

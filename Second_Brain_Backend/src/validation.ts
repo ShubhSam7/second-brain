@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { contentTypes } from "./linkCategorizer";
+import { contentTypes } from "./linkCategorizer.js";
 
 // User validation schemas
 export const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(50),
-  password: z.string().min(6, "Password must be at least 6 characters").max(100),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(100),
 });
 
 export const signinSchema = z.object({
@@ -41,9 +44,18 @@ export const shareLinkSchema = z.object({
 // Query parameter validation
 export const contentFilterSchema = z.object({
   type: z.enum(contentTypes as any).optional(),
-  category: z.enum([
-    "social", "video", "code", "article", "audio", "image", "document", "other"
-  ] as const).optional(),
+  category: z
+    .enum([
+      "social",
+      "video",
+      "code",
+      "article",
+      "audio",
+      "image",
+      "document",
+      "other",
+    ] as const)
+    .optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   offset: z.string().regex(/^\d+$/).transform(Number).optional(),
 });
