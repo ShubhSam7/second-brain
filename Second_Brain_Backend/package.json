@@ -1,7 +1,8 @@
 {
   "name": "second_brain",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
     "build": "prisma generate && tsc -b",
     "start": "node dist/index.js",
@@ -9,12 +10,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -22,6 +25,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.16.0",
     "prisma": "^7.2.0",
     "typescript": "^5.8.3"
   }

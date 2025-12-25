@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.auth = void 0;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const config_1 = require("./config");
-const auth = (req, res, next) => {
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "./config";
+export const auth = (req, res, next) => {
     try {
         const token = req.headers['authorization'];
         if (!token) {
@@ -18,7 +12,7 @@ const auth = (req, res, next) => {
         }
         // Remove 'Bearer ' prefix if present
         const actualToken = token.startsWith('Bearer ') ? token.slice(7) : token;
-        const decoded = jsonwebtoken_1.default.verify(actualToken, config_1.JWT_SECRET);
+        const decoded = jwt.verify(actualToken, JWT_SECRET);
         //@ts-ignore
         req.userId = decoded.id;
         next();
@@ -30,4 +24,3 @@ const auth = (req, res, next) => {
         });
     }
 };
-exports.auth = auth;

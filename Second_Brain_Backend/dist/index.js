@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,27 +7,23 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
 // Load environment variables first
-const dotenv_1 = require("dotenv");
-(0, dotenv_1.config)();
-const express_1 = __importDefault(require("express"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
-const cors_1 = __importDefault(require("cors"));
-const db_1 = __importDefault(require("./db"));
-const config_1 = require("./config");
-const middleware_1 = require("./middleware");
-const utils_1 = require("./utils");
-const validation_1 = require("./validation");
-const linkCategorizer_1 = require("./linkCategorizer");
-const app = (0, express_1.default)();
+import { config } from "dotenv";
+config();
+import express from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import cors from "cors";
+import prisma from "./db";
+import { JWT_SECRET, PORT } from "./config";
+import { auth } from "./middleware";
+import { random } from "./utils";
+import { signupSchema, signinSchema, createContentSchema, contentIdSchema, shareLinkSchema, contentFilterSchema } from "./validation";
+import { categorizeLink, isValidUrl, normalizeUrl } from "./linkCategorizer";
+const app = express();
 // Middleware
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(cors());
+app.use(express.json());
 // Prisma error handler utility
 function handlePrismaError(error, res) {
     var _a, _b;
@@ -68,10 +63,10 @@ app.get("/health", (req, res) => {
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Validate input with Zod
-        const validatedData = validation_1.signupSchema.parse(req.body);
+        const validatedData = signupSchema.parse(req.body);
         const { username, password } = validatedData;
         // Check if user already exists
-        const existingUser = yield db_1.default.user.findUnique({
+        const existingUser = yield prisma.user.findUnique({
             where: { username }
         });
         if (existingUser) {
@@ -82,9 +77,9 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             return;
         }
         // Hash password with bcrypt
-        const hashedPassword = yield bcrypt_1.default.hash(password, 10);
+        const hashedPassword = yield bcrypt.hash(password, 10);
         // Create new user
-        yield db_1.default.user.create({
+        yield prisma.user.create({
             data: {
                 username,
                 password: hashedPassword,
@@ -118,10 +113,10 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
 app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Validate input with Zod
-        const validatedData = validation_1.signinSchema.parse(req.body);
+        const validatedData = signinSchema.parse(req.body);
         const { username, password } = validatedData;
         // Find user
-        const user = yield db_1.default.user.findUnique({
+        const user = yield prisma.user.findUnique({
             where: { username }
         });
         if (!user) {
@@ -132,7 +127,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
             return;
         }
         // Compare password with bcrypt
-        const isPasswordValid = yield bcrypt_1.default.compare(password, user.password);
+        const isPasswordValid = yield bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             res.status(401).json({
                 success: false,
@@ -141,7 +136,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
             return;
         }
         // Generate JWT token
-        const token = jsonwebtoken_1.default.sign({ id: user.id }, config_1.JWT_SECRET, { expiresIn: "7d" });
+        const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: "7d" });
         res.json({
             success: true,
             message: "Signed in successfully",
@@ -166,15 +161,15 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
 }));
 // ============= CONTENT ENDPOINTS =============
-app.post("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Validate input with Zod
-        const validatedData = validation_1.createContentSchema.parse(req.body);
+        const validatedData = createContentSchema.parse(req.body);
         let { link, title, type, description, thumbnail } = validatedData;
         // Normalize URL
-        link = (0, linkCategorizer_1.normalizeUrl)(link);
+        link = normalizeUrl(link);
         // Validate URL
-        if (!(0, linkCategorizer_1.isValidUrl)(link)) {
+        if (!isValidUrl(link)) {
             res.status(400).json({
                 success: false,
                 message: "Invalid URL format",
@@ -182,12 +177,12 @@ app.post("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, v
             return;
         }
         // Auto-categorize link if type not provided
-        const linkInfo = (0, linkCategorizer_1.categorizeLink)(link);
+        const linkInfo = categorizeLink(link);
         const finalType = type || linkInfo.type;
         const category = linkInfo.category;
         const domain = linkInfo.domain;
         // Create content
-        const content = yield db_1.default.content.create({
+        const content = yield prisma.content.create({
             data: {
                 link,
                 type: finalType,
@@ -236,10 +231,10 @@ app.post("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, v
         });
     }
 }));
-app.get("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Parse query parameters
-        const filters = validation_1.contentFilterSchema.parse(req.query);
+        const filters = contentFilterSchema.parse(req.query);
         const { type, category, limit = 100, offset = 0 } = filters;
         // Build where clause
         const where = {
@@ -254,13 +249,13 @@ app.get("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, vo
         }
         // Fetch content with pagination
         const [content, total] = yield Promise.all([
-            db_1.default.content.findMany({
+            prisma.content.findMany({
                 where,
                 orderBy: { createdAt: 'desc' },
                 skip: offset,
                 take: limit,
             }),
-            db_1.default.content.count({ where })
+            prisma.content.count({ where })
         ]);
         res.json({
             success: true,
@@ -289,13 +284,13 @@ app.get("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, vo
         });
     }
 }));
-app.delete("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.delete("/api/v1/content", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Validate input
-        const validatedData = validation_1.contentIdSchema.parse(req.body);
+        const validatedData = contentIdSchema.parse(req.body);
         const { contentId } = validatedData;
         // Delete content (only if it belongs to the user)
-        const result = yield db_1.default.content.deleteMany({
+        const result = yield prisma.content.deleteMany({
             where: {
                 id: contentId,
                 //@ts-ignore
@@ -335,13 +330,13 @@ app.delete("/api/v1/content", middleware_1.auth, (req, res) => __awaiter(void 0,
     }
 }));
 // ============= SHARING ENDPOINTS =============
-app.post("/api/v1/brain/share", middleware_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/api/v1/brain/share", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const validatedData = validation_1.shareLinkSchema.parse(req.body);
+        const validatedData = shareLinkSchema.parse(req.body);
         const { share } = validatedData;
         if (share) {
             // Check if share link already exists
-            const existingLink = yield db_1.default.link.findUnique({
+            const existingLink = yield prisma.link.findUnique({
                 where: {
                     //@ts-ignore
                     userId: req.userId,
@@ -356,8 +351,8 @@ app.post("/api/v1/brain/share", middleware_1.auth, (req, res) => __awaiter(void 
                 return;
             }
             // Create new share link
-            const hash = (0, utils_1.random)(10);
-            const newLink = yield db_1.default.link.create({
+            const hash = random(10);
+            const newLink = yield prisma.link.create({
                 data: {
                     //@ts-ignore
                     userId: req.userId,
@@ -372,7 +367,7 @@ app.post("/api/v1/brain/share", middleware_1.auth, (req, res) => __awaiter(void 
         }
         else {
             // Remove share link
-            yield db_1.default.link.deleteMany({
+            yield prisma.link.deleteMany({
                 where: {
                     //@ts-ignore
                     userId: req.userId,
@@ -408,7 +403,7 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
     try {
         const hash = req.params.shareLink;
         // Find link by hash with user and content
-        const link = yield db_1.default.link.findUnique({
+        const link = yield prisma.link.findUnique({
             where: { hash },
             include: {
                 user: {
@@ -426,7 +421,7 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
             return;
         }
         // Fetch user's content
-        const content = yield db_1.default.content.findMany({
+        const content = yield prisma.content.findMany({
             where: { userId: link.userId },
             orderBy: { createdAt: 'desc' },
             select: {
@@ -458,9 +453,9 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
 }));
 // ============= UTILITY ENDPOINTS =============
 // Get content grouped by category
-app.get("/api/v1/content/categories", middleware_1.auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/api/v1/content/categories", auth, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const categories = yield db_1.default.content.groupBy({
+        const categories = yield prisma.content.groupBy({
             by: ['category'],
             where: {
                 //@ts-ignore
@@ -492,8 +487,8 @@ app.get("/api/v1/content/categories", middleware_1.auth, (req, res) => __awaiter
     }
 }));
 // Start server
-app.listen(config_1.PORT, () => {
-    console.log(`🚀 Server running on port ${config_1.PORT}`);
-    console.log(`📝 API: http://localhost:${config_1.PORT}/api/v1`);
-    console.log(`💓 Health: http://localhost:${config_1.PORT}/health`);
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📝 API: http://localhost:${PORT}/api/v1`);
+    console.log(`💓 Health: http://localhost:${PORT}/health`);
 });

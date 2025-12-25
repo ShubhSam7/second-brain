@@ -1,6 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("@prisma/client");
-// Prisma Client will use the DATABASE_URL from .env automatically
-const prisma = new client_1.PrismaClient();
-exports.default = prisma;
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
+// Create a PostgreSQL connection pool for transaction pooling
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+// Initialize Prisma Client with the adapter
+const prisma = new PrismaClient({ adapter });
+export default prisma;

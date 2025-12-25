@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.random = random;
-function random(len) {
+export function random(len) {
     let options = "qwertyuiop12345asdfghnbvcx";
     let length = options.length;
     let ans = "";
