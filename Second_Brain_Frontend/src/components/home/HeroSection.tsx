@@ -1,6 +1,6 @@
-import { ArrowRight } from 'lucide-react';
-import { motion, type Variants } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -10,13 +10,13 @@ const HeroSection = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.2, delayChildren: 0.3 }
-    }
+      transition: { staggerChildren: 0.2, delayChildren: 0.3 },
+    },
   };
 
   const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
   };
 
   return (
@@ -50,7 +50,7 @@ const HeroSection = () => {
         {/* CTA Button */}
         <motion.div variants={itemVariants} className="flex justify-center">
           <button
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate("/signup")}
             className="group relative px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-medium rounded-full transition-all shadow-[0_0_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_0_50px_-5px_rgba(234,88,12,0.7)] flex items-center gap-2"
           >
             Go to Dashboard
