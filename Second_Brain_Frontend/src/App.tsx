@@ -2,9 +2,9 @@ import DashBoard from "./pages/DashBoard";
 import Signin from "./pages/Signin";
 import SignUp from "./pages/SignUp";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { FeatureSection } from "./components/FeatureSection";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { isAuthenticated, signout, getCurrentUser } from "./lib/api";
+import { ArrowRight, Brain, Share2, Layers, Sparkles, Database } from 'lucide-react';
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -24,138 +24,135 @@ function LandingPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background-primary">
-      {/* Top right buttons */}
-      <div className="absolute top-8 right-8 flex gap-4 z-10 animate-fade-in">
-        {isLoggedIn ? (
-          <>
-            <div className="px-5 py-2.5 text-sm font-medium text-text-secondary">
-              Welcome, {username}
-            </div>
-            <button
-              className="px-5 py-2.5 text-sm font-medium text-text-secondary bg-surface border border-border-muted rounded-lg hover:border-red-400 hover:text-red-400 transition-all duration-300"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              className="px-5 py-2.5 text-sm font-medium text-text-secondary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
-              onClick={() => navigate("/signin")}
-            >
-              Sign In
-            </button>
-            <button
-              className="px-5 py-2.5 text-sm font-medium text-background-primary bg-text-primary rounded-lg hover:bg-accent-primary hover:text-white transition-all duration-300"
-              onClick={() => navigate("/signup")}
-            >
-              Sign Up
-            </button>
-          </>
-        )}
+    <div className="min-h-screen bg-neutral-950 text-white selection:bg-orange-500/30 overflow-hidden relative">
+
+      {/* BACKGROUND EFFECTS */}
+      <div className="absolute inset-0 z-0">
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        {/* Radial Gradient Glow */}
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-orange-500 opacity-20 blur-[100px]"></div>
       </div>
 
-      {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
-        {/* Subtle glow background effect */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-accent-glow rounded-full blur-3xl opacity-30 animate-glow-pulse"></div>
+      {/* NAVBAR */}
+      <nav className="relative z-50 flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20">
+            <Brain className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-xl font-bold tracking-tight">SecondBrain</span>
+        </div>
 
-        <div className="relative z-10 text-center space-y-8 max-w-4xl animate-slide-up">
-          {/* Main Headline */}
-          <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-text-primary via-text-primary to-text-secondary bg-clip-text text-transparent leading-tight">
-            Your Digital
-            <span className="block mt-2 bg-gradient-to-r from-accent-primary to-text-primary bg-clip-text text-transparent">
-              Second Brain
-            </span>
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
-            Capture, organize, and retrieve your ideas with a premium infrastructure-grade knowledge management system.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
-            <button
-              className="group px-8 py-4 text-base font-semibold text-background-primary bg-accent-primary rounded-lg hover:bg-accent-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,106,0,0.3)] flex items-center gap-2"
-              onClick={handleGetStarted}
-            >
-              {isLoggedIn ? "Go to Dashboard" : "Get Started"}
-              <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
-            </button>
-            {!isLoggedIn && (
+        <div className="flex items-center gap-6">
+          {isLoggedIn ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-neutral-400 hidden sm:inline">
+                Welcome back, <span className="text-neutral-200">{username}</span>
+              </span>
               <button
-                className="px-8 py-4 text-base font-semibold text-text-primary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-medium text-neutral-300 hover:text-white transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
                 onClick={() => navigate("/signin")}
+                className="text-sm font-medium text-neutral-300 hover:text-white transition-colors"
               >
                 Sign In
               </button>
-            )}
-          </div>
+              <button
+                onClick={() => navigate("/signup")}
+                className="px-4 py-2 text-sm font-medium bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition-colors"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
         </div>
-      </div>
+      </nav>
 
-      {/* Features Section */}
-      <div className="max-w-6xl mx-auto px-6 py-24 space-y-16">
-        <FeatureSection
-          number="01"
-          title="Universal Content Capture"
-          description="Save anything from anywhere. Your second brain accepts all forms of knowledge."
-          features={[
-            "YouTube videos, tweets, and social media posts",
-            "Articles, documents, and research papers",
-            "Code snippets, GitHub repos, and technical content",
-            "Images, podcasts, and multimedia resources",
-          ]}
-        />
+      {/* HERO SECTION */}
+      <main className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32 text-center">
 
-        <FeatureSection
-          number="02"
-          title="Intelligent Organization"
-          description="Automatically categorize and tag your content for instant retrieval."
-          features={[
-            "Smart categorization by content type",
-            "Custom tags and collections",
-            "Full-text search across all saved items",
-            "Visual timeline of your knowledge journey",
-          ]}
-        />
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-orange-400 mb-8 animate-fade-in-up">
+          <Sparkles className="w-3 h-3" />
+          <span>Powered by GPT-4 & Prisma ORM</span>
+        </div>
 
-        <FeatureSection
-          number="03"
-          title="Seamless Sharing"
-          description="Share your curated knowledge collections with teams or the world."
-          features={[
-            "Public or private brain sharing",
-            "Collaborative collections with teams",
-            "Embed-friendly content previews",
-            "Export to multiple formats",
-          ]}
-        />
-      </div>
+        {/* Main Headline */}
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+          Your Digital <br />
+          <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-orange-500 to-red-500">
+            Second Brain
+          </span>
+        </h1>
 
-      {/* Footer CTA */}
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <div className="border border-border-muted bg-surface rounded-2xl p-12 space-y-6">
-          <h2 className="text-4xl font-bold text-text-primary">
-            {isLoggedIn ? "Continue building your second brain" : "Ready to build your second brain?"}
-          </h2>
-          <p className="text-lg text-text-secondary">
-            {isLoggedIn ? "Access your dashboard and manage your knowledge." : "Join thousands organizing their digital knowledge."}
-          </p>
+        {/* Subheadline */}
+        <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+          Stop losing great ideas. Capture links, articles, and videos with
+          <span className="text-neutral-200"> automatic AI categorization</span>.
+          Your personal infrastructure for knowledge.
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
-            className="mt-6 px-10 py-4 text-base font-semibold text-background-primary bg-accent-primary rounded-lg hover:bg-accent-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,106,0,0.3)]"
             onClick={handleGetStarted}
+            className="group relative px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-semibold rounded-full transition-all shadow-[0_0_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_0_60px_-15px_rgba(234,88,12,0.6)] flex items-center gap-2"
           >
-            {isLoggedIn ? "Go to Dashboard" : "Start Free Today"}
+            {isLoggedIn ? "Go to Dashboard" : "Get Started"}
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
+
+          {!isLoggedIn && (
+            <button
+              onClick={() => navigate("/signin")}
+              className="px-8 py-4 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 rounded-full transition-all flex items-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
         </div>
-      </div>
+
+        {/* FEATURE HIGHLIGHTS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-32 text-left">
+          <FeatureCard
+            icon={<Database className="w-6 h-6 text-orange-400" />}
+            title="Supabase Powered"
+            desc="Infrastructure-grade database reliability with Prisma ORM connection pooling."
+          />
+          <FeatureCard
+            icon={<Layers className="w-6 h-6 text-orange-400" />}
+            title="Smart Sorting"
+            desc="Links are automatically categorized by domain and content type upon entry."
+          />
+          <FeatureCard
+            icon={<Share2 className="w-6 h-6 text-orange-400" />}
+            title="Share Brain"
+            desc="Generate unique hashed links to share specific collections with the world."
+          />
+        </div>
+      </main>
     </div>
   );
 }
+
+// Feature card component
+const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
+  <div className="p-6 rounded-2xl bg-neutral-900/50 border border-neutral-800 hover:border-orange-500/30 transition-colors backdrop-blur-sm group">
+    <div className="mb-4 p-3 bg-neutral-800 rounded-lg inline-block group-hover:bg-orange-500/10 transition-colors">
+      {icon}
+    </div>
+    <h3 className="text-xl font-semibold mb-2 text-neutral-100">{title}</h3>
+    <p className="text-neutral-400 leading-relaxed">{desc}</p>
+  </div>
+);
 
 export default function App() {
   return (

@@ -1,26 +1,49 @@
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { ShareIcon } from "../icons/ShareIcon";
 import type { ContentType } from "../lib/types";
+import { useState } from "react";
 
 interface CardProps {
+  id: string;
   title: string;
   link: string;
   type: ContentType;
+  onDelete?: (id: string) => void;
 }
 
-export default function Card({ title, link, type }: CardProps) {
+export default function Card({ id, title, link, type, onDelete }: CardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      setIsDeleting(true);
+      try {
+        if (onDelete) {
+          await onDelete(id);
+        }
+      } catch (error) {
+        console.error("Failed to delete:", error);
+        setIsDeleting(false);
+      }
+    }
+  };
+
   return (
-    <div className="w-90 h-[350px] bg-surface border border-border-muted shadow-xl rounded-xl flex flex-col gap-3 p-4 overflow-hidden hover:border-accent-primary/30 transition-all duration-300 group">
+    <div className={`w-90 h-[350px] bg-surface border border-border-muted shadow-xl rounded-xl flex flex-col gap-3 p-4 overflow-hidden hover:border-accent-primary/30 transition-all duration-300 group ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="flex justify-between items-center">
         <div className="text-text-secondary flex items-center">
-          <DeleteIcon />
           <div className="pl-2">{title}</div>
         </div>
         <div className="flex items-center gap-3">
-          <a href={link} target="_blank" className="text-text-secondary hover:text-accent-primary transition-colors duration-300">
+          <a href={link} target="_blank" rel="noreferrer" className="text-text-secondary hover:text-accent-primary transition-colors duration-300">
             <ShareIcon />
           </a>
-          <button className="text-text-secondary hover:text-red-400 transition-colors duration-300">
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="text-text-secondary hover:text-red-400 transition-colors duration-300 disabled:opacity-50"
+            title="Delete content"
+          >
             <DeleteIcon />
           </button>
         </div>
