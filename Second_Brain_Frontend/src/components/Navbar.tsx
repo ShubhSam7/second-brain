@@ -1,7 +1,7 @@
-import { BrainCircuit } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { isAuthenticated } from '../lib/api';
-import { motion } from 'framer-motion';
+import { BrainCircuit } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { isAuthenticated } from "../lib/api";
+import { motion } from "framer-motion";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -15,12 +15,11 @@ const Navbar = () => {
       className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl"
     >
       <div className="bg-neutral-950/60 backdrop-blur-md border border-white/10 rounded-full shadow-lg px-6 py-3">
-        <div className="flex items-center justify-between">
-
+        <div className="grid grid-cols-3 items-center">
           {/* LEFT: Brand Logo */}
           <div
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 cursor-pointer group"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 cursor-pointer group justify-self-start"
           >
             <div className="p-1.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-shadow">
               <BrainCircuit className="w-5 h-5 text-white" />
@@ -31,7 +30,7 @@ const Navbar = () => {
           </div>
 
           {/* CENTER: Navigation Links (hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex justify-center items-center gap-8">
             <a
               href="#home"
               className="text-sm font-medium text-neutral-300 hover:text-white transition-colors"
@@ -53,10 +52,10 @@ const Navbar = () => {
           </div>
 
           {/* RIGHT: CTA Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-self-end">
             {authenticated ? (
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate("/dashboard")}
                 className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold rounded-full transition-all shadow-md hover:shadow-lg"
               >
                 Dashboard
@@ -64,13 +63,13 @@ const Navbar = () => {
             ) : (
               <>
                 <button
-                  onClick={() => navigate('/signin')}
+                  onClick={() => navigate("/signin")}
                   className="px-4 py-2 text-sm font-medium text-neutral-300 hover:text-white transition-colors hidden sm:block"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate("/signup")}
                   className="px-5 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-semibold rounded-full transition-all shadow-md hover:shadow-lg"
                 >
                   Get Started
