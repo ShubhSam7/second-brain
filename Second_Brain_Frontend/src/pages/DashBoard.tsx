@@ -8,16 +8,29 @@ import { useState } from "react";
 import SideBar from "../components/SideBar";
 import { useContent } from "../hooks/useContent";
 import { createShareLink, removeShareLink } from "../lib/api";
-import type { CategoryType } from "../lib/types";
+import type { CategoryType, ContentType } from "../lib/types";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<CategoryType | "all">("all");
+  const [activeFilter, setActiveFilter] = useState<ContentType | CategoryType | "all">("all");
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  const categoryFilter = activeCategory === "all" ? undefined : { category: activeCategory };
-  const { content, loading, error, fetchContent, removeContent } = useContent(categoryFilter);
+  // Determine filter type based on the active filter value
+  const getContentFilter = () => {
+    if (activeFilter === "all") return undefined;
+
+    // Check if it's a content type
+    const contentTypes: ContentType[] = ['twitter', 'instagram', 'linkedin', 'youtube', 'spotify', 'github', 'medium', 'image', 'document', 'other'];
+    if (contentTypes.includes(activeFilter as ContentType)) {
+      return { type: activeFilter as ContentType };
+    }
+
+    // Otherwise it's a category
+    return { category: activeFilter as CategoryType };
+  };
+
+  const { content, loading, error, fetchContent, removeContent } = useContent(getContentFilter());
 
   const handleShareBrain = async () => {
     setIsSharing(true);
@@ -52,11 +65,16 @@ export default function DashBoard() {
     }
   };
 
+  const getPageTitle = () => {
+    if (activeFilter === "all") return "All Notes";
+    return `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Content`;
+  };
+
   return (
     <div>
       <SideBar
-        activeCategory={activeCategory}
-        onCategoryChange={setActiveCategory}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
       />
 
       <div className="ml-72 min-h-screen bg-background-primary">
@@ -68,7 +86,7 @@ export default function DashBoard() {
 
         <div className="flex justify-between items-center p-8 border-b border-border-muted">
           <div className="text-3xl font-bold text-text-primary tracking-wide">
-            {activeCategory === "all" ? "All Notes" : `${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} Content`}
+            {getPageTitle()}
           </div>
           <div className="flex gap-3">
             <Button
