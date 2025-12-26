@@ -107,27 +107,31 @@ export default function DashBoard() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-6 p-8">
-          {loading ? (
-            <div className="text-text-secondary text-lg">Loading your content...</div>
-          ) : error ? (
-            <div className="text-red-400 text-lg">Error: {error}</div>
-          ) : content.length === 0 ? (
-            <div className="text-text-secondary text-lg">
-              No content yet. Click "Add Content" to get started!
-            </div>
-          ) : (
-            content.map((item) => (
-              <Card
-                key={item._id}
-                id={item._id}
-                title={item.title}
-                type={item.type}
-                link={item.link}
-                onDelete={handleDeleteContent}
-              />
-            ))
-          )}
+        <div className="p-8 w-full flex justify-center">
+          <div className="w-full max-w-7xl">
+            {loading ? (
+              <div className="text-text-secondary text-lg">Loading your content...</div>
+            ) : error ? (
+              <div className="text-red-400 text-lg">Error: {error}</div>
+            ) : content.length === 0 ? (
+              <div className="text-text-secondary text-lg">
+                No content yet. Click "Add Content" to get started!
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                {content.map((item) => (
+                  <Card
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    type={item.type}
+                    link={item.link}
+                    onDelete={handleDeleteContent}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

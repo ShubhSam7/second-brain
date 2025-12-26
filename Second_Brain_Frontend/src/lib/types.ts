@@ -1,18 +1,53 @@
 // Content types
 export type ContentType =
-  | 'twitter' | 'instagram' | 'linkedin' | 'facebook' | 'tiktok' | 'reddit'
-  | 'youtube' | 'vimeo' | 'twitch' | 'dailymotion'
-  | 'github' | 'gitlab' | 'codepen' | 'codesandbox' | 'stackoverflow' | 'replit'
-  | 'medium' | 'dev' | 'hashnode' | 'substack' | 'article'
-  | 'spotify' | 'soundcloud' | 'apple-music'
-  | 'imgur' | 'pinterest' | 'flickr' | 'image'
-  | 'google-docs' | 'notion' | 'dropbox' | 'document'
-  | 'video' | 'audio' | 'other';
+  | "twitter"
+  | "instagram"
+  | "linkedin"
+  | "facebook"
+  | "tiktok"
+  | "reddit"
+  | "youtube"
+  | "vimeo"
+  | "twitch"
+  | "dailymotion"
+  | "github"
+  | "gitlab"
+  | "codepen"
+  | "codesandbox"
+  | "stackoverflow"
+  | "replit"
+  | "medium"
+  | "dev"
+  | "hashnode"
+  | "substack"
+  | "article"
+  | "spotify"
+  | "soundcloud"
+  | "apple-music"
+  | "imgur"
+  | "pinterest"
+  | "flickr"
+  | "image"
+  | "google-docs"
+  | "notion"
+  | "dropbox"
+  | "document"
+  | "video"
+  | "audio"
+  | "other";
 
-export type CategoryType = 'social' | 'video' | 'code' | 'article' | 'audio' | 'image' | 'document' | 'other';
+export type CategoryType =
+  | "social"
+  | "video"
+  | "code"
+  | "article"
+  | "audio"
+  | "image"
+  | "document"
+  | "other";
 
 export interface Content {
-  _id: string;
+  id: string;
   link: string;
   type: ContentType;
   category: CategoryType;

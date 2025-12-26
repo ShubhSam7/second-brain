@@ -1,8 +1,21 @@
-import { useState, useEffect } from 'react';
-import { getContent, createContent, deleteContent, getCategories } from '../lib/api';
-import type { Content, CreateContentData, CategoryType, ContentType } from '../lib/types';
+import { useState, useEffect } from "react";
+import {
+  getContent,
+  createContent,
+  deleteContent,
+  getCategories,
+} from "../lib/api";
+import type {
+  Content,
+  CreateContentData,
+  CategoryType,
+  ContentType,
+} from "../lib/types";
 
-export const useContent = (filters?: { type?: ContentType; category?: CategoryType }) => {
+export const useContent = (filters?: {
+  type?: ContentType;
+  category?: CategoryType;
+}) => {
   const [content, setContent] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +35,8 @@ export const useContent = (filters?: { type?: ContentType; category?: CategoryTy
       setPagination(response.pagination);
       setLoading(false);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to fetch content';
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch content";
       setError(errorMessage);
       setLoading(false);
     }
@@ -35,7 +49,8 @@ export const useContent = (filters?: { type?: ContentType; category?: CategoryTy
       await fetchContent();
       return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to add content';
+      const errorMessage =
+        err.response?.data?.message || "Failed to add content";
       throw new Error(errorMessage);
     }
   };
@@ -44,9 +59,10 @@ export const useContent = (filters?: { type?: ContentType; category?: CategoryTy
     try {
       await deleteContent(contentId);
       // Remove from local state
-      setContent(content.filter(item => item._id !== contentId));
+      setContent(content.filter((item) => item.id !== contentId));
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to delete content';
+      const errorMessage =
+        err.response?.data?.message || "Failed to delete content";
       throw new Error(errorMessage);
     }
   };
@@ -68,7 +84,9 @@ export const useContent = (filters?: { type?: ContentType; category?: CategoryTy
 };
 
 export const useCategories = () => {
-  const [categories, setCategories] = useState<{ category: CategoryType; count: number }[]>([]);
+  const [categories, setCategories] = useState<
+    { category: CategoryType; count: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,7 +98,8 @@ export const useCategories = () => {
       setCategories(response.categories);
       setLoading(false);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to fetch categories';
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch categories";
       setError(errorMessage);
       setLoading(false);
     }

@@ -45,6 +45,8 @@ module.exports = {
         "slide-in-left": "slideInLeft 0.7s ease-out",
         glow: "glow 2s ease-in-out infinite",
         "glow-pulse": "glowPulse 3s ease-in-out infinite",
+        "spin-slow": "spin 20s linear infinite",
+        "reverse-spin-slow": "reverseSpin 15s linear infinite",
       },
       keyframes: {
         fadeIn: {
@@ -66,6 +68,10 @@ module.exports = {
         glowPulse: {
           "0%, 100%": { boxShadow: "0 0 20px rgba(255, 106, 0, 0.2)" },
           "50%": { boxShadow: "0 0 40px rgba(255, 106, 0, 0.4)" },
+        },
+        reverseSpin: {
+          "0%": { transform: "rotate(360deg)" },
+          "100%": { transform: "rotate(0deg)" },
         },
       },
     },

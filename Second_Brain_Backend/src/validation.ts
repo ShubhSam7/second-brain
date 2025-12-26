@@ -33,7 +33,7 @@ export const updateContentSchema = z.object({
 });
 
 export const contentIdSchema = z.object({
-  contentId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid content ID"),
+  contentId: z.string().min(1, "Content ID is required"),
 });
 
 // Link sharing validation
