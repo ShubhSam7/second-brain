@@ -6,10 +6,13 @@ import { ShareIcon } from "../icons/ShareIcon";
 import CreateContentModel from "../components/CreateContentModel";
 import { useState } from "react";
 import SideBar from "../components/SideBar";
+import { useContent } from "../hooks/useContent";
+import type { CategoryType } from "../lib/types";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<any>("all");
+  const [activeCategory, setActiveCategory] = useState<CategoryType | "all">("all");
+  const { content, loading, error } = useContent();
 
   return (
     <div>
@@ -44,16 +47,24 @@ export default function DashBoard() {
         </div>
 
         <div className="flex flex-wrap gap-6 p-8">
-          <Card
-            title="Share"
-            type="youtube"
-            link="https://www.youtube.com/watch?v=TnAMqYjKwfM"
-          />
-          <Card
-            title="Share"
-            type="twitter"
-            link="https://x.com/heyhexadecimal/status/1941052582983790720"
-          />
+          {loading ? (
+            <div className="text-text-secondary text-lg">Loading your content...</div>
+          ) : error ? (
+            <div className="text-red-400 text-lg">Error: {error}</div>
+          ) : content.length === 0 ? (
+            <div className="text-text-secondary text-lg">
+              No content yet. Click "Add Content" to get started!
+            </div>
+          ) : (
+            content.map((item) => (
+              <Card
+                key={item._id}
+                title={item.title}
+                type={item.type}
+                link={item.link}
+              />
+            ))
+          )}
         </div>
 
       </div>

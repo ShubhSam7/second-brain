@@ -53,6 +53,7 @@ export const useContent = (filters?: { type?: ContentType; category?: CategoryTy
 
   useEffect(() => {
     fetchContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters?.type, filters?.category]);
 
   return {

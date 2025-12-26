@@ -2,7 +2,12 @@ import { CrossIcon } from "../icons/CrossIcon";
 import { Button } from "./Button";
 import { Input } from "./Input";
 
-export default function CreateContentModel({ open, onClose }: any) {
+interface CreateContentModelProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export default function CreateContentModel({ open, onClose }: CreateContentModelProps) {
   return (
     <div>
       {open && (

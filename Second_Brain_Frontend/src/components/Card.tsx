@@ -1,13 +1,14 @@
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { ShareIcon } from "../icons/ShareIcon";
+import type { ContentType } from "../lib/types";
 
-interface Style {
+interface CardProps {
   title: string;
   link: string;
-  type: "twitter" | "youtube" | "other";
+  type: ContentType;
 }
 
-export default function Card({ title, link, type }: Style): any {
+export default function Card({ title, link, type }: CardProps) {
   return (
     <div className="w-90 h-[350px] bg-surface border border-border-muted shadow-xl rounded-xl flex flex-col gap-3 p-4 overflow-hidden hover:border-accent-primary/30 transition-all duration-300 group">
       <div className="flex justify-between items-center">

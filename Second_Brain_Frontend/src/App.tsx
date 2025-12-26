@@ -3,6 +3,7 @@ import Signin from "./pages/Signin";
 import SignUp from "./pages/SignUp";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { FeatureSection } from "./components/FeatureSection";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function LandingPage() {
   const navigate = useNavigate();
@@ -129,7 +130,11 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<Signin />} />
-        <Route path="/dashboard" element={<DashBoard />} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <DashBoard />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );
