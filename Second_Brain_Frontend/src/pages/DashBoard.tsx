@@ -12,7 +12,7 @@ import type { CategoryType } from "../lib/types";
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<CategoryType | "all">("all");
-  const { content, loading, error } = useContent();
+  const { content, loading, error, fetchContent } = useContent();
 
   return (
     <div>
@@ -25,7 +25,8 @@ export default function DashBoard() {
         <CreateContentModel
           open={modelOpen}
           onClose={() => setModelOpen(false)}
-        ></CreateContentModel>
+          onSuccess={fetchContent}
+        />
 
         <div className="flex justify-between items-center p-8 border-b border-border-muted">
           <div className="text-3xl font-bold text-text-primary tracking-wide">All Notes</div>

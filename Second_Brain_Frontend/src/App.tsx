@@ -4,25 +4,57 @@ import SignUp from "./pages/SignUp";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { FeatureSection } from "./components/FeatureSection";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { isAuthenticated, signout, getCurrentUser } from "./lib/api";
 
 function LandingPage() {
   const navigate = useNavigate();
+  const isLoggedIn = isAuthenticated();
+  const username = getCurrentUser();
+
+  const handleLogout = () => {
+    signout();
+  };
+
+  const handleGetStarted = () => {
+    if (isLoggedIn) {
+      navigate("/dashboard");
+    } else {
+      navigate("/signin");
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-background-primary">
       {/* Top right buttons */}
       <div className="absolute top-8 right-8 flex gap-4 z-10 animate-fade-in">
-        <button
-          className="px-5 py-2.5 text-sm font-medium text-text-secondary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
-          onClick={() => navigate("/signin")}
-        >
-          Sign In
-        </button>
-        <button
-          className="px-5 py-2.5 text-sm font-medium text-background-primary bg-text-primary rounded-lg hover:bg-accent-primary hover:text-white transition-all duration-300"
-          onClick={() => navigate("/signup")}
-        >
-          Sign Up
-        </button>
+        {isLoggedIn ? (
+          <>
+            <div className="px-5 py-2.5 text-sm font-medium text-text-secondary">
+              Welcome, {username}
+            </div>
+            <button
+              className="px-5 py-2.5 text-sm font-medium text-text-secondary bg-surface border border-border-muted rounded-lg hover:border-red-400 hover:text-red-400 transition-all duration-300"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="px-5 py-2.5 text-sm font-medium text-text-secondary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
+              onClick={() => navigate("/signin")}
+            >
+              Sign In
+            </button>
+            <button
+              className="px-5 py-2.5 text-sm font-medium text-background-primary bg-text-primary rounded-lg hover:bg-accent-primary hover:text-white transition-all duration-300"
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
+            </button>
+          </>
+        )}
       </div>
 
       {/* Hero Section */}
@@ -48,17 +80,19 @@ function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
             <button
               className="group px-8 py-4 text-base font-semibold text-background-primary bg-accent-primary rounded-lg hover:bg-accent-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,106,0,0.3)] flex items-center gap-2"
-              onClick={() => navigate("/dashboard")}
+              onClick={handleGetStarted}
             >
-              Get Started
+              {isLoggedIn ? "Go to Dashboard" : "Get Started"}
               <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
             </button>
-            <button
-              className="px-8 py-4 text-base font-semibold text-text-primary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
-              onClick={() => navigate("/signin")}
-            >
-              View Demo
-            </button>
+            {!isLoggedIn && (
+              <button
+                className="px-8 py-4 text-base font-semibold text-text-primary bg-surface border border-border-muted rounded-lg hover:border-accent-primary hover:text-accent-primary transition-all duration-300"
+                onClick={() => navigate("/signin")}
+              >
+                Sign In
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -106,16 +140,16 @@ function LandingPage() {
       <div className="max-w-4xl mx-auto px-6 py-24 text-center">
         <div className="border border-border-muted bg-surface rounded-2xl p-12 space-y-6">
           <h2 className="text-4xl font-bold text-text-primary">
-            Ready to build your second brain?
+            {isLoggedIn ? "Continue building your second brain" : "Ready to build your second brain?"}
           </h2>
           <p className="text-lg text-text-secondary">
-            Join thousands organizing their digital knowledge.
+            {isLoggedIn ? "Access your dashboard and manage your knowledge." : "Join thousands organizing their digital knowledge."}
           </p>
           <button
             className="mt-6 px-10 py-4 text-base font-semibold text-background-primary bg-accent-primary rounded-lg hover:bg-accent-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,106,0,0.3)]"
-            onClick={() => navigate("/signup")}
+            onClick={handleGetStarted}
           >
-            Start Free Today
+            {isLoggedIn ? "Go to Dashboard" : "Start Free Today"}
           </button>
         </div>
       </div>
