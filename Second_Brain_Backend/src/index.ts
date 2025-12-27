@@ -542,9 +542,24 @@ app.get(
   }
 );
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📝 API: http://localhost:${PORT}/api/v1`);
-  console.log(`💓 Health: http://localhost:${PORT}/health`);
+// Root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Second Brain Backend is Running!",
+    version: "1.0.0",
+  });
 });
+
+// IMPORTANT: Only listen on port if NOT running on Vercel
+// Vercel sets 'process.env.VERCEL' to '1' automatically
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📝 API: http://localhost:${PORT}/api/v1`);
+    console.log(`💓 Health: http://localhost:${PORT}/health`);
+  });
+}
+
+// CRITICAL: Export the app for Vercel serverless functions
+export default app;
