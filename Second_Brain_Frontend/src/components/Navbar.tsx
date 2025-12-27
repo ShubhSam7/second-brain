@@ -9,17 +9,17 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ y: -20, x: "-50%", opacity: 0 }}
+      animate={{ y: 0, x: "-50%", opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.6, 0.01, 0.05, 0.95] }}
-      className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl"
+      className="fixed top-6 left-1/2 z-50 w-[90%] max-w-5xl"
     >
       <div className="bg-neutral-950/60 backdrop-blur-md border border-white/10 rounded-full shadow-lg px-6 py-3">
-        <div className="grid grid-cols-3 items-center">
+        <div className="flex items-center justify-between relative">
           {/* LEFT: Brand Logo */}
           <div
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 cursor-pointer group justify-self-start"
+            className="flex items-center gap-2 cursor-pointer group flex-shrink-0"
           >
             <div className="p-1.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-shadow">
               <BrainCircuit className="w-5 h-5 text-white" />
@@ -29,8 +29,8 @@ const Navbar = () => {
             </span>
           </div>
 
-          {/* CENTER: Navigation Links (hidden on mobile) */}
-          <div className="hidden md:flex justify-center items-center gap-8">
+          {/* CENTER: Navigation Links (hidden on mobile) - Absolutely centered */}
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             <a
               href="#home"
               className="text-sm font-medium text-neutral-300 hover:text-white transition-colors"
@@ -52,7 +52,7 @@ const Navbar = () => {
           </div>
 
           {/* RIGHT: CTA Buttons */}
-          <div className="flex items-center gap-3 justify-self-end">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {authenticated ? (
               <button
                 onClick={() => navigate("/dashboard")}
