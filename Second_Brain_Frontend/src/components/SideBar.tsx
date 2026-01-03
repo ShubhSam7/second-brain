@@ -21,9 +21,10 @@ import { useState, useEffect, useRef } from "react";
 interface SideBarProps {
   activeFilter?: ContentType | CategoryType | "all";
   onFilterChange: (filter: ContentType | CategoryType | "all") => void;
+  isOpen?: boolean;
 }
 
-export default function SideBar({ activeFilter = "all", onFilterChange }: SideBarProps) {
+export default function SideBar({ activeFilter = "all", onFilterChange, isOpen = true }: SideBarProps) {
   const username = getCurrentUser();
   const userInitial = username ? username.charAt(0).toUpperCase() : "U";
   const [showDropdown, setShowDropdown] = useState(false);
@@ -53,7 +54,7 @@ export default function SideBar({ activeFilter = "all", onFilterChange }: SideBa
   }, [showDropdown]);
 
   return (
-    <aside className="h-screen w-72 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-300 fixed overflow-y-auto">
+    <aside className={`h-screen w-72 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-300 fixed overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Subtle gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900/50 pointer-events-none"></div>
 

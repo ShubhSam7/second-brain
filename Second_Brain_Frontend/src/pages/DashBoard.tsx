@@ -9,12 +9,14 @@ import SideBar from "../components/SideBar";
 import { useContent } from "../hooks/useContent";
 import { createShareLink, removeShareLink } from "../lib/api";
 import type { CategoryType, ContentType } from "../lib/types";
+import { Menu } from "lucide-react";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ContentType | CategoryType | "all">("all");
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Determine filter type based on the active filter value
   const getContentFilter = () => {
@@ -75,20 +77,30 @@ export default function DashBoard() {
       <SideBar
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
+        isOpen={isSidebarOpen}
       />
 
-      <div className="ml-72 min-h-screen bg-background-primary">
+      <div className={`${isSidebarOpen ? 'ml-72' : 'ml-0'} min-h-screen bg-background-primary transition-all duration-300`}>
         <CreateContentModel
           open={modelOpen}
           onClose={() => setModelOpen(false)}
           onSuccess={fetchContent}
         />
 
-        <div className="flex justify-between items-center p-8 border-b border-border-muted">
-          <div className="text-3xl font-bold text-text-primary tracking-wide">
-            {getPageTitle()}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-8 border-b border-border-muted gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-200 flex-shrink-0"
+              title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+            >
+              <Menu className="w-5 h-5 text-neutral-300" />
+            </button>
+            <div className="text-2xl sm:text-3xl font-bold text-text-primary tracking-wide truncate">
+              {getPageTitle()}
+            </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
             <Button
               onClick={handleShareBrain}
               startIcon={<ShareIcon />}
@@ -107,7 +119,7 @@ export default function DashBoard() {
           </div>
         </div>
 
-        <div className="p-8 w-full flex justify-center">
+        <div className="p-4 sm:p-8 w-full flex justify-center">
           <div className="w-full max-w-7xl">
             {loading ? (
               <div className="text-text-secondary text-lg">Loading your content...</div>
@@ -118,7 +130,7 @@ export default function DashBoard() {
                 No content yet. Click "Add Content" to get started!
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {content.map((item) => (
                   <Card
                     key={item.id}

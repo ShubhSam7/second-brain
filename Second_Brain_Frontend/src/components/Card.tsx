@@ -80,7 +80,7 @@ export default function Card({ id, title, link, type, onDelete }: CardProps) {
     <div
       onClick={handleCardClick}
       className={`
-        w-full h-[340px]
+        w-full h-[280px] sm:h-[340px]
         bg-neutral-900
         border border-neutral-800
         hover:border-orange-500/50
@@ -125,42 +125,42 @@ export default function Card({ id, title, link, type, onDelete }: CardProps) {
         )}
 
         {/* HOVER OVERLAY - Action Buttons */}
-        <div className="absolute top-0 right-0 p-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+        <div className="absolute top-0 right-0 p-2 sm:p-3 flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
           <a
             href={link}
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="p-2 bg-neutral-900/90 backdrop-blur-sm rounded-lg border border-neutral-700 hover:border-orange-500 hover:bg-orange-500/10 transition-all duration-200"
+            className="p-1.5 sm:p-2 bg-neutral-900/90 backdrop-blur-sm rounded-lg border border-neutral-700 hover:border-orange-500 hover:bg-orange-500/10 transition-all duration-200"
             title="Open link"
           >
-            <Share2 className="w-4 h-4 text-neutral-300 hover:text-orange-500" />
+            <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-300 hover:text-orange-500" />
           </a>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="p-2 bg-neutral-900/90 backdrop-blur-sm rounded-lg border border-neutral-700 hover:border-red-500 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50"
+            className="p-1.5 sm:p-2 bg-neutral-900/90 backdrop-blur-sm rounded-lg border border-neutral-700 hover:border-red-500 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50"
             title="Delete content"
           >
-            <Trash2 className="w-4 h-4 text-neutral-300 hover:text-red-500" />
+            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-300 hover:text-red-500" />
           </button>
         </div>
       </div>
 
       {/* BOTTOM CONTENT SECTION (40% height) */}
-      <div className="h-[40%] p-4 flex flex-col justify-between">
+      <div className="h-[40%] p-3 sm:p-4 flex flex-col justify-between">
         {/* Title with line clamp */}
-        <h3 className="text-neutral-200 font-medium text-sm line-clamp-2 mb-2">
+        <h3 className="text-neutral-200 font-medium text-xs sm:text-sm line-clamp-2 mb-1 sm:mb-2">
           {title}
         </h3>
 
         {/* Footer Metadata */}
-        <div className="flex items-center justify-between text-xs text-neutral-500">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between text-[10px] sm:text-xs text-neutral-500">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {getIconForType(type, "sm")}
             <span className="capitalize">{type}</span>
           </div>
-          <div className="text-neutral-600 truncate max-w-[120px]">
+          <div className="text-neutral-600 truncate max-w-[100px] sm:max-w-[120px]">
             {new URL(link).hostname.replace("www.", "")}
           </div>
         </div>
