@@ -54,7 +54,7 @@ export default function SideBar({ activeFilter = "all", onFilterChange, isOpen =
   }, [showDropdown]);
 
   return (
-    <aside className={`h-screen w-72 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-300 fixed overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`h-screen w-72 bg-neutral-950 border-r border-neutral-800 flex flex-col transition-all duration-300 fixed overflow-y-auto z-50 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Subtle gradient overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950 to-neutral-900/50 pointer-events-none"></div>
 

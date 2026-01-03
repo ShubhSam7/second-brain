@@ -16,7 +16,7 @@ export default function DashBoard() {
   const [activeFilter, setActiveFilter] = useState<ContentType | CategoryType | "all">("all");
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Determine filter type based on the active filter value
   const getContentFilter = () => {
@@ -73,14 +73,22 @@ export default function DashBoard() {
   };
 
   return (
-    <div>
+    <div className="relative">
+      {/* Blur Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       <SideBar
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
         isOpen={isSidebarOpen}
       />
 
-      <div className={`${isSidebarOpen ? 'ml-72' : 'ml-0'} min-h-screen bg-background-primary transition-all duration-300`}>
+      <div className="min-h-screen bg-background-primary">
         <CreateContentModel
           open={modelOpen}
           onClose={() => setModelOpen(false)}
