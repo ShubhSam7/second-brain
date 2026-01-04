@@ -66,4 +66,33 @@
   .glow-accent-strong {
     box-shadow: 0 0 40px theme("colors.accent.primary");
   }
+
+  /* Modal Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 250ms ease-out;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 250ms ease-out;
+  }
 }

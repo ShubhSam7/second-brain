@@ -78,7 +78,7 @@ export interface SigninData {
 
 export interface CreateContentData {
   link: string;
-  title: string;
+  title?: string; // Optional - AI will auto-generate if not provided
   type?: ContentType;
   description?: string;
   thumbnail?: string;

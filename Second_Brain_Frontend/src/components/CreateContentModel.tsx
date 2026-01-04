@@ -1,4 +1,5 @@
 import { CrossIcon } from "../icons/CrossIcon";
+import { LoaderIcon } from "../icons/LoaderIcon";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { useState } from "react";
@@ -10,9 +11,12 @@ interface CreateContentModelProps {
   onSuccess?: () => void;
 }
 
-export default function CreateContentModel({ open, onClose, onSuccess }: CreateContentModelProps) {
+export default function CreateContentModel({
+  open,
+  onClose,
+  onSuccess,
+}: CreateContentModelProps) {
   const [link, setLink] = useState("");
-  const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,19 +26,15 @@ export default function CreateContentModel({ open, onClose, onSuccess }: CreateC
       setError("Content link is required");
       return;
     }
-    if (!title.trim()) {
-      setError("Title is required");
-      return;
-    }
 
     setLoading(true);
     setError(null);
 
     try {
-      await createContent({ link: link.trim(), title: title.trim() });
+      // Backend now auto-generates title and summary using AI
+      await createContent({ link: link.trim() });
       // Reset form
       setLink("");
-      setTitle("");
       // Call success callback to refresh content list
       if (onSuccess) {
         onSuccess();
@@ -42,7 +42,17 @@ export default function CreateContentModel({ open, onClose, onSuccess }: CreateC
       // Close modal
       onClose();
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || "Failed to add content";
+      let errorMessage = "Failed to add content";
+
+      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        // Handle Zod validation errors
+        errorMessage = err.response.data.errors.map((e: any) => e.message).join(", ");
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -51,7 +61,6 @@ export default function CreateContentModel({ open, onClose, onSuccess }: CreateC
 
   const handleClose = () => {
     setLink("");
-    setTitle("");
     setError(null);
     onClose();
   };
@@ -62,31 +71,43 @@ export default function CreateContentModel({ open, onClose, onSuccess }: CreateC
         <div className="flex fixed bg-black/60 backdrop-blur-sm w-full h-full top-0 left-0 justify-center items-center z-50 animate-fade-in">
           <div className="bg-surface border border-border-muted rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl animate-slide-up">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-text-primary tracking-wide">Add Content</h3>
+              <h3 className="text-2xl font-bold text-text-primary tracking-wide">
+                {loading ? "Analyzing Content..." : "Add Content"}
+              </h3>
               <button
                 onClick={handleClose}
-                className="text-text-secondary hover:text-accent-primary transition-colors duration-300"
+                disabled={loading}
+                className="text-text-secondary hover:text-accent-primary transition-colors duration-300 disabled:opacity-50"
               >
                 <CrossIcon />
               </button>
             </div>
             <div className="space-y-4">
               <Input
-                placeholder="Title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-              <Input
-                placeholder="Content Link (URL)"
+                placeholder="Paste URL here (e.g., https://example.com/article)"
                 type="url"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
+                disabled={loading}
                 required
               />
+              {loading && (
+                <div className="flex items-center gap-2 text-accent-primary text-sm bg-accent-primary/10 p-3 rounded-lg">
+                  <LoaderIcon />
+                  <span>
+                    Scraping content, generating summary & embedding...
+                  </span>
+                </div>
+              )}
               {error && (
-                <div className="text-red-400 text-sm mt-2">{error}</div>
+                <div className="text-red-400 text-sm bg-red-400/10 p-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+              {!loading && (
+                <div className="text-text-secondary text-xs bg-surface-light p-3 rounded-lg">
+                  ℹ️ AI will automatically extract title and generate summary
+                </div>
               )}
             </div>
             <div className="flex justify-end gap-3 mt-6">
@@ -99,7 +120,7 @@ export default function CreateContentModel({ open, onClose, onSuccess }: CreateC
               />
               <Button
                 variant="primary"
-                text={loading ? "Submitting..." : "Submit"}
+                text={loading ? "Analyzing..." : "Add Content"}
                 size="md"
                 onClick={handleSubmit}
                 disabled={loading}

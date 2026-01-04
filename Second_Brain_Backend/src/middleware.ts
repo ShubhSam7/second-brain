@@ -19,7 +19,6 @@ export const auth = (req: Request, res: Response, next: NextFunction): void => {
 
     const decoded = jwt.verify(actualToken, JWT_SECRET) as { id: string };
 
-    //@ts-ignore
     req.userId = decoded.id;
     next();
   } catch (error) {
