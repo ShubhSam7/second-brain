@@ -24,13 +24,16 @@ model Content {
   id          String   @id @default(cuid())
   link        String
   type        String
-  category    String
+  category    String   @default("uncategorized") // Added default for safety
   domain      String?
   title       String
   description String?
   thumbnail   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  embedding             Unsupported("vector(768)")?
+  embeddingGeneratedAt  DateTime?
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

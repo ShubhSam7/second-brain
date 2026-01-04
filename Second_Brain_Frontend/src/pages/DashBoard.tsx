@@ -6,6 +6,7 @@ import { ShareIcon } from "../icons/ShareIcon";
 import CreateContentModel from "../components/CreateContentModel";
 import { useState } from "react";
 import SideBar from "../components/SideBar";
+import { SearchBar } from "../components/SearchBar";
 import { useContent } from "../hooks/useContent";
 import { createShareLink, removeShareLink } from "../lib/api";
 import type { CategoryType, ContentType } from "../lib/types";
@@ -17,6 +18,8 @@ export default function DashBoard() {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   // Determine filter type based on the active filter value
   const getContentFilter = () => {
@@ -68,8 +71,19 @@ export default function DashBoard() {
   };
 
   const getPageTitle = () => {
+    if (isSearchMode) return "Search Results";
     if (activeFilter === "all") return "All Notes";
     return `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Content`;
+  };
+
+  const handleSearchResults = (results: any[]) => {
+    setSearchResults(results);
+    setIsSearchMode(true);
+  };
+
+  const handleClearSearch = () => {
+    setSearchResults([]);
+    setIsSearchMode(false);
   };
 
   return (
@@ -127,29 +141,74 @@ export default function DashBoard() {
           </div>
         </div>
 
+        {/* Search Bar Section */}
+        <div className="p-4 sm:p-8 pb-0">
+          <div className="max-w-7xl mx-auto">
+            <SearchBar onResults={handleSearchResults} />
+            {isSearchMode && (
+              <div className="mt-4">
+                <button
+                  onClick={handleClearSearch}
+                  className="text-sm text-accent-primary hover:text-accent-secondary transition-colors"
+                >
+                  ← Back to all content
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="p-4 sm:p-8 w-full flex justify-center">
           <div className="w-full max-w-7xl">
-            {loading ? (
-              <div className="text-text-secondary text-lg">Loading your content...</div>
-            ) : error ? (
-              <div className="text-red-400 text-lg">Error: {error}</div>
-            ) : content.length === 0 ? (
-              <div className="text-text-secondary text-lg">
-                No content yet. Click "Add Content" to get started!
-              </div>
+            {isSearchMode ? (
+              // Search Results Display
+              searchResults.length === 0 ? (
+                <div className="text-text-secondary text-lg">
+                  No results found. Try a different search query.
+                </div>
+              ) : (
+                <div>
+                  <div className="text-text-secondary text-sm mb-4">
+                    Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                    {searchResults.map((item) => (
+                      <Card
+                        key={item.id}
+                        id={item.id}
+                        title={item.title}
+                        type={item.type}
+                        link={item.link}
+                        onDelete={handleDeleteContent}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {content.map((item) => (
-                  <Card
-                    key={item.id}
-                    id={item.id}
-                    title={item.title}
-                    type={item.type}
-                    link={item.link}
-                    onDelete={handleDeleteContent}
-                  />
-                ))}
-              </div>
+              // Normal Content Display
+              loading ? (
+                <div className="text-text-secondary text-lg">Loading your content...</div>
+              ) : error ? (
+                <div className="text-red-400 text-lg">Error: {error}</div>
+              ) : content.length === 0 ? (
+                <div className="text-text-secondary text-lg">
+                  No content yet. Click "Add Content" to get started!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {content.map((item) => (
+                    <Card
+                      key={item.id}
+                      id={item.id}
+                      title={item.title}
+                      type={item.type}
+                      link={item.link}
+                      onDelete={handleDeleteContent}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </div>
         </div>

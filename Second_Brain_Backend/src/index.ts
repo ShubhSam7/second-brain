@@ -19,6 +19,16 @@ import {
   contentFilterSchema,
 } from "./validation.js";
 import { categorizeLink, isValidUrl, normalizeUrl } from "./linkCategorizer.js";
+import { scrapeAndSummarize, getEmbedding } from "./services/aiPipeline.js";
+
+// Extend Express Request type to include userId from auth middleware
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+    }
+  }
+}
 
 const app = express();
 
@@ -42,9 +52,10 @@ function handlePrismaError(error: any, res: Response): void {
     });
   } else if (error.code === "P2003") {
     // Foreign key constraint violation
+    console.error("[Prisma P2003] Foreign key constraint failed:", error.meta);
     res.status(400).json({
       success: false,
-      message: "Invalid reference",
+      message: "User authentication error. Please sign in again.",
     });
   } else {
     res.status(500).json({
@@ -178,6 +189,17 @@ app.post(
   auth,
   async (req: Request, res: Response): Promise<void> => {
     try {
+      console.log("[POST /api/v1/content] userId from auth:", req.userId);
+
+      // Ensure userId exists
+      if (!req.userId) {
+        res.status(401).json({
+          success: false,
+          message: "User authentication failed",
+        });
+        return;
+      }
+
       // Validate input with Zod
       const validatedData = createContentSchema.parse(req.body);
       let { link, title, type, description, thumbnail } = validatedData;
@@ -200,38 +222,81 @@ app.post(
       const category = linkInfo.category;
       const domain = linkInfo.domain;
 
-      // Create content
-      const content = await prisma.content.create({
-        data: {
-          link,
-          type: finalType,
-          category,
-          domain,
-          title,
-          description,
-          thumbnail,
-          //@ts-ignore
-          userId: req.userId,
-        },
-      });
+      // AI Pipeline: Scrape, Summarize, and Generate Embedding
+      let aiTitle = title;
+      let aiDescription = description;
+      let embeddingVector: number[] | null = null;
 
-      res.status(201).json({
-        success: true,
-        message: "Content added successfully",
-        content: {
-          id: content.id,
-          link: content.link,
-          type: content.type,
-          category: content.category,
-          domain: content.domain,
-          title: content.title,
-          description: content.description,
-          thumbnail: content.thumbnail,
-          createdAt: content.createdAt,
-        },
+      try {
+        console.log(`[AI Pipeline] Processing URL: ${link}`);
+
+        // 1. Scrape and Summarize
+        const { title: scrapedTitle, summary } = await scrapeAndSummarize(link);
+
+        // Use AI-generated data if not provided by user
+        aiTitle = title || scrapedTitle;
+        aiDescription = description || summary;
+
+        // 2. Generate Embedding
+        const textToEmbed = `Title: ${aiTitle}\nSummary: ${aiDescription}`;
+        embeddingVector = await getEmbedding(textToEmbed);
+
+        console.log(`[AI Pipeline] Successfully processed: ${aiTitle}`);
+      } catch (aiError: any) {
+        console.error(
+          `[AI Pipeline] Error processing ${link}:`,
+          aiError.message
+        );
+        // Continue without AI data if it fails
+      }
+
+      // Create content with transaction to include embedding
+      await prisma.$transaction(async (tx) => {
+        const content = await tx.content.create({
+          data: {
+            link,
+            type: finalType,
+            category,
+            domain,
+            title: aiTitle || domain || "Untitled",
+            description: aiDescription,
+            thumbnail,
+            userId: req.userId!,
+          },
+        });
+
+        // Inject embedding vector if available
+        if (embeddingVector && embeddingVector.length === 768) {
+          const embeddingString = `[${embeddingVector.join(",")}]`;
+          await tx.$executeRaw`
+            UPDATE "Content"
+            SET embedding = ${embeddingString}::vector,
+                "embeddingGeneratedAt" = NOW()
+            WHERE id = ${content.id}
+          `;
+        }
+
+        res.status(201).json({
+          success: true,
+          message: "Content added successfully",
+          content: {
+            id: content.id,
+            link: content.link,
+            type: content.type,
+            category: content.category,
+            domain: content.domain,
+            title: content.title,
+            description: content.description,
+            thumbnail: content.thumbnail,
+            createdAt: content.createdAt,
+          },
+        });
       });
     } catch (e: any) {
+      console.error("[POST /api/v1/content] Error:", e);
+
       if (e.name === "ZodError") {
+        console.error("[POST /api/v1/content] Zod validation errors:", e.errors);
         res.status(400).json({
           success: false,
           message: "Validation error",
@@ -240,6 +305,7 @@ app.post(
         return;
       }
       if (e.code && e.code.startsWith("P")) {
+        console.error("[POST /api/v1/content] Prisma error:", e.code, e.message);
         handlePrismaError(e, res);
         return;
       }
@@ -263,8 +329,7 @@ app.get(
 
       // Build where clause
       const where: any = {
-        //@ts-ignore
-        userId: req.userId,
+        userId: req.userId!,
       };
 
       if (type) {
@@ -327,8 +392,7 @@ app.delete(
       const result = await prisma.content.deleteMany({
         where: {
           id: contentId,
-          //@ts-ignore
-          userId: req.userId,
+          userId: req.userId!,
         },
       });
 
@@ -366,6 +430,97 @@ app.delete(
   }
 );
 
+// ============= SEMANTIC SEARCH ENDPOINT =============
+
+app.get(
+  "/api/v1/brain/search",
+  auth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { q } = req.query;
+
+      if (!q || typeof q !== "string") {
+        res.status(400).json({
+          success: false,
+          message: "Search query (q) is required",
+        });
+        return;
+      }
+
+      console.log(`[Semantic Search] Query: "${q}"`);
+
+      // 1. Generate embedding for the search query
+      let queryVector: number[];
+      try {
+        queryVector = await getEmbedding(q);
+        console.log(`[Semantic Search] Generated query embedding`);
+      } catch (embeddingError: any) {
+        console.error(
+          `[Semantic Search] Embedding failed:`,
+          embeddingError.message
+        );
+        res.status(500).json({
+          success: false,
+          message: "Failed to process search query",
+        });
+        return;
+      }
+
+      // 2. Perform vector similarity search
+      const embeddingString = `[${queryVector.join(",")}]`;
+
+      const results = await prisma.$queryRaw<
+        Array<{
+          id: string;
+          title: string;
+          link: string;
+          description: string | null;
+          type: string;
+          category: string;
+          domain: string | null;
+          thumbnail: string | null;
+          similarity: number;
+        }>
+      >`
+        SELECT 
+          id, title, link, description, type, category, domain, thumbnail,
+          1 - (embedding <=> ${embeddingString}::vector) as similarity
+        FROM "Content"
+        WHERE "userId" = ${(req as any).userId}
+        AND embedding IS NOT NULL
+        AND 1 - (embedding <=> ${embeddingString}::vector) > 0.4
+        ORDER BY similarity DESC
+        LIMIT 10;
+      `;
+
+      console.log(`[Semantic Search] Found ${results.length} results`);
+
+      res.json({
+        success: true,
+        query: q,
+        results: results.map((r) => ({
+          id: r.id,
+          title: r.title,
+          link: r.link,
+          description: r.description,
+          type: r.type,
+          category: r.category,
+          domain: r.domain,
+          thumbnail: r.thumbnail,
+          similarity: Math.round(r.similarity * 100) / 100, // Round to 2 decimals
+        })),
+      });
+    } catch (e: any) {
+      console.error("[Semantic Search] Error:", e.message);
+      res.status(500).json({
+        success: false,
+        message: "Search failed",
+        error: e.message,
+      });
+    }
+  }
+);
+
 // ============= SHARING ENDPOINTS =============
 
 app.post(
@@ -380,8 +535,7 @@ app.post(
         // Check if share link already exists
         const existingLink = await prisma.link.findUnique({
           where: {
-            //@ts-ignore
-            userId: req.userId,
+            userId: req.userId!,
           },
         });
 
@@ -398,8 +552,7 @@ app.post(
         const hash = random(10);
         const newLink = await prisma.link.create({
           data: {
-            //@ts-ignore
-            userId: req.userId,
+            userId: req.userId!,
             hash: hash,
           },
         });
@@ -413,8 +566,7 @@ app.post(
         // Remove share link
         await prisma.link.deleteMany({
           where: {
-            //@ts-ignore
-            userId: req.userId,
+            userId: req.userId!,
           },
         });
 
@@ -512,8 +664,7 @@ app.get(
       const categories = await prisma.content.groupBy({
         by: ["category"],
         where: {
-          //@ts-ignore
-          userId: req.userId,
+          userId: req.userId!,
         },
         _count: {
           category: true,
