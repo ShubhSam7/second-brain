@@ -233,24 +233,37 @@ app.post(
         // 1. Scrape and Summarize
         const { title: scrapedTitle, summary } = await scrapeAndSummarize(link);
 
+        console.log(`[AI Pipeline] Scraped title: "${scrapedTitle}"`);
+        console.log(`[AI Pipeline] Generated summary: "${summary}"`);
+
         // Use AI-generated data if not provided by user
         aiTitle = title || scrapedTitle;
         aiDescription = description || summary;
+
+        console.log(`[AI Pipeline] Final title: "${aiTitle}"`);
+        console.log(`[AI Pipeline] Final description: "${aiDescription}"`);
 
         // 2. Generate Embedding
         const textToEmbed = `Title: ${aiTitle}\nSummary: ${aiDescription}`;
         embeddingVector = await getEmbedding(textToEmbed);
 
         console.log(`[AI Pipeline] Successfully processed: ${aiTitle}`);
-      } catch (aiError: any) {
-        console.error(
-          `[AI Pipeline] Error processing ${link}:`,
-          aiError.message
+        console.log(
+          `[AI Pipeline] Embedding vector length: ${embeddingVector?.length}`
         );
+      } catch (aiError: any) {
+        console.error(`[AI Pipeline] COMPLETE ERROR for ${link}:`, aiError);
+        console.error(`[AI Pipeline] Error stack:`, aiError.stack);
         // Continue without AI data if it fails
       }
 
       // Create content with transaction to include embedding
+      console.log(`[Database] Preparing to save content:`);
+      console.log(`  - Title: "${aiTitle || domain || "Untitled"}"`);
+      console.log(`  - Description: "${aiDescription || "undefined"}"`);
+      console.log(`  - Type: ${finalType}`);
+      console.log(`  - Category: ${category}`);
+
       await prisma.$transaction(async (tx) => {
         const content = await tx.content.create({
           data: {
@@ -264,6 +277,8 @@ app.post(
             userId: req.userId!,
           },
         });
+
+        console.log(`[Database] Content created with ID: ${content.id}`);
 
         // Inject embedding vector if available
         if (embeddingVector && embeddingVector.length === 768) {
@@ -449,10 +464,26 @@ app.get(
 
       console.log(`[Semantic Search] Query: "${q}"`);
 
+      // Preprocess query: normalize whitespace, case, and unicode
+      const normalizedQuery = q
+        .trim()
+        .replace(/\s+/g, " ") // Collapse multiple spaces
+        .normalize("NFD") // Unicode normalization
+        .replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
+
+      console.log(`[Semantic Search] Normalized query: "${normalizedQuery}"`);
+
+      // Enhance query for better semantic matching (convert to natural sentence)
+      const enhancedQuery = normalizedQuery.length < 50
+        ? `Information about ${normalizedQuery}, including concepts related to ${normalizedQuery}`
+        : normalizedQuery;
+
+      console.log(`[Semantic Search] Enhanced query: "${enhancedQuery}"`);
+
       // 1. Generate embedding for the search query
       let queryVector: number[];
       try {
-        queryVector = await getEmbedding(q);
+        queryVector = await getEmbedding(enhancedQuery);
         console.log(`[Semantic Search] Generated query embedding`);
       } catch (embeddingError: any) {
         console.error(
@@ -466,10 +497,10 @@ app.get(
         return;
       }
 
-      // 2. Perform vector similarity search
+      // 2. Perform vector similarity search (lowered threshold from 0.4 to 0.35)
       const embeddingString = `[${queryVector.join(",")}]`;
 
-      const results = await prisma.$queryRaw<
+      let results = await prisma.$queryRaw<
         Array<{
           id: string;
           title: string;
@@ -482,22 +513,64 @@ app.get(
           similarity: number;
         }>
       >`
-        SELECT 
+        SELECT
           id, title, link, description, type, category, domain, thumbnail,
           1 - (embedding <=> ${embeddingString}::vector) as similarity
         FROM "Content"
-        WHERE "userId" = ${(req as any).userId}
+        WHERE "userId" = ${req.userId}
         AND embedding IS NOT NULL
-        AND 1 - (embedding <=> ${embeddingString}::vector) > 0.4
+        AND 1 - (embedding <=> ${embeddingString}::vector) > 0.35
         ORDER BY similarity DESC
         LIMIT 10;
       `;
 
-      console.log(`[Semantic Search] Found ${results.length} results`);
+      console.log(`[Semantic Search] Found ${results.length} semantic results`);
+
+      // 3. Fallback to keyword search if no semantic results found
+      if (results.length === 0) {
+        console.log(`[Semantic Search] No semantic results, falling back to keyword search`);
+
+        const keywordPattern = `%${normalizedQuery.toLowerCase()}%`;
+
+        results = await prisma.$queryRaw<
+          Array<{
+            id: string;
+            title: string;
+            link: string;
+            description: string | null;
+            type: string;
+            category: string;
+            domain: string | null;
+            thumbnail: string | null;
+            similarity: number;
+          }>
+        >`
+          SELECT
+            id, title, link, description, type, category, domain, thumbnail,
+            0.5 as similarity
+          FROM "Content"
+          WHERE "userId" = ${req.userId}
+          AND (
+            LOWER(title) LIKE ${keywordPattern}
+            OR LOWER(description) LIKE ${keywordPattern}
+            OR LOWER(domain) LIKE ${keywordPattern}
+          )
+          ORDER BY
+            CASE
+              WHEN LOWER(title) LIKE ${keywordPattern} THEN 1
+              WHEN LOWER(description) LIKE ${keywordPattern} THEN 2
+              ELSE 3
+            END
+          LIMIT 10;
+        `;
+
+        console.log(`[Semantic Search] Found ${results.length} keyword matches`);
+      }
 
       res.json({
         success: true,
         query: q,
+        matchType: results.length > 0 && results[0].similarity > 0.35 ? "semantic" : "keyword",
         results: results.map((r) => ({
           id: r.id,
           title: r.title,

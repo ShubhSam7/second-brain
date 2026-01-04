@@ -14,7 +14,9 @@ import { Menu } from "lucide-react";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ContentType | CategoryType | "all">("all");
+  const [activeFilter, setActiveFilter] = useState<
+    ContentType | CategoryType | "all"
+  >("all");
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -26,7 +28,18 @@ export default function DashBoard() {
     if (activeFilter === "all") return undefined;
 
     // Check if it's a content type
-    const contentTypes: ContentType[] = ['twitter', 'instagram', 'linkedin', 'youtube', 'spotify', 'github', 'medium', 'image', 'document', 'other'];
+    const contentTypes: ContentType[] = [
+      "twitter",
+      "instagram",
+      "linkedin",
+      "youtube",
+      "spotify",
+      "github",
+      "medium",
+      "image",
+      "document",
+      "other",
+    ];
     if (contentTypes.includes(activeFilter as ContentType)) {
       return { type: activeFilter as ContentType };
     }
@@ -35,7 +48,9 @@ export default function DashBoard() {
     return { category: activeFilter as CategoryType };
   };
 
-  const { content, loading, error, fetchContent, removeContent } = useContent(getContentFilter());
+  const { content, loading, error, fetchContent, removeContent } = useContent(
+    getContentFilter()
+  );
 
   const handleShareBrain = async () => {
     setIsSharing(true);
@@ -73,7 +88,9 @@ export default function DashBoard() {
   const getPageTitle = () => {
     if (isSearchMode) return "Search Results";
     if (activeFilter === "all") return "All Notes";
-    return `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} Content`;
+    return `${
+      activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)
+    } Content`;
   };
 
   const handleSearchResults = (results: any[]) => {
@@ -169,7 +186,8 @@ export default function DashBoard() {
               ) : (
                 <div>
                   <div className="text-text-secondary text-sm mb-4">
-                    Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                    Found {searchResults.length} result
+                    {searchResults.length !== 1 ? "s" : ""}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {searchResults.map((item) => (
@@ -179,40 +197,41 @@ export default function DashBoard() {
                         title={item.title}
                         type={item.type}
                         link={item.link}
+                        description={item.description}
                         onDelete={handleDeleteContent}
                       />
                     ))}
                   </div>
                 </div>
               )
+            ) : // Normal Content Display
+            loading ? (
+              <div className="text-text-secondary text-lg">
+                Loading your content...
+              </div>
+            ) : error ? (
+              <div className="text-red-400 text-lg">Error: {error}</div>
+            ) : content.length === 0 ? (
+              <div className="text-text-secondary text-lg">
+                No content yet. Click "Add Content" to get started!
+              </div>
             ) : (
-              // Normal Content Display
-              loading ? (
-                <div className="text-text-secondary text-lg">Loading your content...</div>
-              ) : error ? (
-                <div className="text-red-400 text-lg">Error: {error}</div>
-              ) : content.length === 0 ? (
-                <div className="text-text-secondary text-lg">
-                  No content yet. Click "Add Content" to get started!
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {content.map((item) => (
-                    <Card
-                      key={item.id}
-                      id={item.id}
-                      title={item.title}
-                      type={item.type}
-                      link={item.link}
-                      onDelete={handleDeleteContent}
-                    />
-                  ))}
-                </div>
-              )
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {content.map((item) => (
+                  <Card
+                    key={item.id}
+                    id={item.id}
+                    title={item.title}
+                    type={item.type}
+                    link={item.link}
+                    description={item.description}
+                    onDelete={handleDeleteContent}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

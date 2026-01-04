@@ -115,6 +115,7 @@ export const searchContent = async (
 ): Promise<{
   success: boolean;
   query: string;
+  matchType?: "semantic" | "keyword";
   results: Array<Content & { similarity: number }>;
 }> => {
   const response = await api.get("/brain/search", {
