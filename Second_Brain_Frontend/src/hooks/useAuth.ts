@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { useState } from 'react';
 import { signup, signin, signout, isAuthenticated, getCurrentUser } from '../lib/api';
 import type { SignupData, SigninData } from '../lib/types';
@@ -13,8 +14,8 @@ export const useAuth = () => {
       const response = await signup(data);
       setLoading(false);
       return response;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Signup failed';
+    } catch (err: unknown) {
+      const errorMessage = (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || 'Signup failed';
       setError(errorMessage);
       setLoading(false);
       throw new Error(errorMessage);
@@ -28,8 +29,8 @@ export const useAuth = () => {
       const response = await signin(data);
       setLoading(false);
       return response;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Signin failed';
+    } catch (err: unknown) {
+      const errorMessage = (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || 'Signin failed';
       setError(errorMessage);
       setLoading(false);
       throw new Error(errorMessage);

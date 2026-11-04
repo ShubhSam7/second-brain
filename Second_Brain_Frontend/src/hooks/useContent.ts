@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { useState, useEffect } from "react";
 import {
   getContent,
@@ -34,9 +35,9 @@ export const useContent = (filters?: {
       setContent(response.content);
       setPagination(response.pagination);
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "Failed to fetch content";
+        (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || "Failed to fetch content";
       setError(errorMessage);
       setLoading(false);
     }
@@ -48,9 +49,9 @@ export const useContent = (filters?: {
       // Refresh content list
       await fetchContent();
       return response;
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "Failed to add content";
+        (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || "Failed to add content";
       throw new Error(errorMessage);
     }
   };
@@ -60,9 +61,9 @@ export const useContent = (filters?: {
       await deleteContent(contentId);
       // Remove from local state
       setContent(content.filter((item) => item.id !== contentId));
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "Failed to delete content";
+        (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || "Failed to delete content";
       throw new Error(errorMessage);
     }
   };
@@ -97,9 +98,9 @@ export const useCategories = () => {
       const response = await getCategories();
       setCategories(response.categories);
       setLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorMessage =
-        err.response?.data?.message || "Failed to fetch categories";
+        (isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : undefined) || "Failed to fetch categories";
       setError(errorMessage);
       setLoading(false);
     }

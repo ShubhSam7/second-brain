@@ -1,106 +1,248 @@
-import Navbar from '../components/Navbar';
-import HeroSection from '../components/home/HeroSection';
-import FeatureSection from '../components/home/FeatureSection';
-import Footer from '../components/Footer';
-import { BrainCircuit, Database, Share2, Sparkles } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Layers3,
+  Link2,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import LibraryPreview from "../components/home/LibraryPreview";
+import { isAuthenticated } from "../lib/api";
 
-const HomePage = () => {
+const features = [
+  {
+    icon: Link2,
+    number: "01",
+    title: "Save the good stuff.",
+    text: "An insightful article. A video worth revisiting. A thread that clicks. Bring it all together with a link.",
+  },
+  {
+    icon: Sparkles,
+    number: "02",
+    title: "A little help from AI.",
+    text: "Get a title, a useful summary, and a place for every link. Less organizing, more connecting the dots.",
+  },
+  {
+    icon: Search,
+    number: "03",
+    title: "Find that thing again.",
+    text: "Search the way you think. Find what you saved by the idea behind it, even when the exact words escape you.",
+  },
+];
+
+export default function HomePage() {
+  const destination = isAuthenticated() ? "/dashboard" : "/signup";
   return (
-    <div className="min-h-screen bg-neutral-950 text-white selection:bg-orange-500/30 overflow-x-hidden">
+    <div className="landing-page">
       <Navbar />
-
-      {/* Global Background Effects */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* Subtle Grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-        {/* Top Orange Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/20 blur-[120px] rounded-full"></div>
-      </div>
-
-      <div className="relative z-10">
-        <HeroSection />
-
-        {/* --- DETAILED FEATURE SECTIONS (Like Inspiration) --- */}
-
-        {/* Feature 1: AI & Capture - Image Right */}
-        <FeatureSection
-          badge="Smart Capture"
-          title="AI-Powered Knowledge Ingestion"
-          description="Stop manually tagging. Our vector database engine analyzes your links, videos, and articles to generate descriptions and categorize them automatically upon save."
-          icon={<Sparkles className="text-orange-400" />}
-          align="right"
-        >
-          {/* Abstract Tech Graphic representing AI processing */}
-          <div className="relative w-full h-[400px] bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex items-center justify-center">
-             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent"></div>
-             {/* Simulated Data Flow Nodes */}
-             <div className="relative z-10 flex gap-8">
-                <div className="w-24 h-24 bg-neutral-800 border border-orange-500/50 rounded-xl flex items-center justify-center shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)]">Input Link</div>
-                <BrainCircuit className="w-12 h-12 text-orange-500 animate-pulse" />
-                <div className="w-24 h-24 bg-neutral-800 border border-orange-500/50 rounded-xl flex items-center justify-center shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)]">Vector DB</div>
-             </div>
+      <main>
+        <section className="landing-hero" id="home">
+          <div className="hero-grid" aria-hidden="true" />
+          <div className="hero-copy">
+            <span className="eyebrow">
+              <span className="status-dot" /> A CLEARER MIND STARTS HERE
+            </span>
+            <h1>
+              Good ideas deserve
+              <br />a place to <em>stay.</em>
+              <span className="headline-spark" aria-hidden="true">
+                ✳
+              </span>
+            </h1>
+            <p>
+              Your favorite links, passing thoughts, and next big ideas.
+              <br className="desktop-break" /> One calm space to collect them. A
+              second brain to connect them.
+            </p>
+            <div className="hero-actions">
+              <Link className="action-primary" to={destination}>
+                Build your second brain <ArrowRight size={17} />
+              </Link>
+              <a className="action-text" href="#your-library">
+                Take a look inside <ArrowDown size={16} />
+              </a>
+            </div>
+            <div className="hero-footnote">
+              <Check size={13} /> Free to get started <span>·</span> A little
+              less mental clutter
+            </div>
           </div>
-        </FeatureSection>
-
-        {/* Feature 2: Infrastructure - Image Left */}
-        <FeatureSection
-          badge="True Transactional"
-          title="Infrastructure-Grade Reliability"
-          description="Built on Supabase PostgreSQL with Prisma ORM connection pooling. Your data rests on industry-standard, scalable infrastructure designed for performance and security."
-          icon={<Database className="text-orange-400" />}
-          align="left"
-        >
-           {/* Abstract Tech Graphic representing Database */}
-          <div className="relative w-full h-[400px] bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-4">
-             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-orange-500/10 blur-[80px] rounded-full"></div>
-             <div className="w-4/5 h-16 border border-neutral-700 bg-neutral-900/80 rounded-lg flex items-center px-4 text-neutral-400 font-mono text-sm shadow-[0_0_15px_rgba(249,115,22,0.1)]">Prisma Client Connection Pool</div>
-             <div className="h-8 w-0.5 bg-orange-500/50"></div>
-             <div className="w-4/5 h-24 border border-orange-500/30 bg-neutral-900/80 rounded-lg flex items-center justify-center text-orange-200 font-bold text-lg shadow-[0_0_30px_rgba(249,115,22,0.2)]">
-                Supabase PostgreSQL (pgvector)
-             </div>
+          <div className="preview-wrap" id="your-library">
+            <div className="preview-caption">
+              <span>
+                <span className="status-dot" /> A HOME FOR EVERYTHING THAT
+                INSPIRES YOU
+              </span>
+              <span>
+                YOUR IDEAS. BEAUTIFULLY CONNECTED. <ArrowDown size={12} />
+              </span>
+            </div>
+            <LibraryPreview />
           </div>
-        </FeatureSection>
-
-        {/* Feature 3: Sharing - Image Right */}
-        <FeatureSection
-          badge="Collaboration"
-          title="Share Your Brain With The World"
-          description="Curate collections and generate unique, hashed public links. Share your structured knowledge base without exposing your private dashboard."
-          icon={<Share2 className="text-orange-400" />}
-          align="right"
+        </section>
+        <section
+          className="sources-strip"
+          aria-label="Supported content sources"
         >
-           {/* Abstract Graphic representing Sharing */}
-          <div className="relative w-full h-[400px] bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden flex items-center justify-center">
-              {/* Central Hub */}
-              <div className="w-32 h-32 bg-orange-600/20 border border-orange-500 rounded-full flex items-center justify-center relative z-10">
-                 <BrainCircuit size={40} className="text-orange-400" />
-              </div>
-              {/* Orbiting Nodes */}
-              <div className="absolute w-[280px] h-[280px] border border-neutral-700 rounded-full animate-spin-slow">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-neutral-800 border border-orange-400 rounded-full"></div>
-              </div>
-               <div className="absolute w-[200px] h-[200px] border border-neutral-700 rounded-full animate-reverse-spin-slow">
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-8 h-8 bg-neutral-800 border border-orange-400 rounded-full"></div>
-              </div>
+          <p>
+            From all over the internet.
+            <br />
+            <strong>Finally, all in one place.</strong>
+          </p>
+          <div className="source-wordmarks">
+            <span>
+              ▶ <b>YouTube</b>
+            </span>
+            <span>
+              𝕏 <b>Twitter</b>
+            </span>
+            <span>
+              ●◐ <b>Medium</b>
+            </span>
+            <span>
+              <Layers3 size={22} />
+              <b>GitHub</b>
+            </span>
+            <span>
+              ◉ <b>Spotify</b>
+            </span>
+            <span className="source-more">
+              & everything else <Link2 size={17} />
+            </span>
           </div>
-        </FeatureSection>
-
-        {/* Final CTA Section */}
-        <div className="py-32 text-center relative overflow-hidden">
-           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-500/10 blur-[100px] rounded-full"></div>
-           <h2 className="text-4xl font-bold mb-8">Ready to organize your digital life?</h2>
-           <button
-             onClick={() => window.location.href = '/signup'}
-             className="px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-full transition-all shadow-[0_0_40px_-10px_rgba(234,88,12,0.5)] hover:shadow-[0_0_50px_-5px_rgba(234,88,12,0.7)] relative z-10"
-           >
-             Get Started for Free
-           </button>
-        </div>
-      </div>
-
+        </section>
+        <section className="feature-section section-container" id="features">
+          <div className="section-intro">
+            <div>
+              <span className="eyebrow">
+                LESS FRICTION. MORE LIGHTBULB MOMENTS.
+              </span>
+              <h2>
+                A small habit.
+                <br />
+                <em>A clearer head.</em>
+              </h2>
+            </div>
+            <p>
+              You don’t need another complicated system.
+              <br />
+              Just somewhere your curiosity can feel at home.
+            </p>
+          </div>
+          <div className="feature-grid">
+            {features.map(({ icon: Icon, number, title, text }) => (
+              <article className="feature-tile" key={number}>
+                <div className="feature-top">
+                  <span className="feature-icon">
+                    <Icon size={22} strokeWidth={1.6} />
+                  </span>
+                  <span>{number}</span>
+                </div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section
+          className="connection-section section-container"
+          id="how-it-works"
+        >
+          <div className="connection-visual" aria-hidden="true">
+            <div className="orbit orbit-one" />
+            <div className="orbit orbit-two" />
+            <span className="orbit-node node-book">
+              <Link2 />
+            </span>
+            <span className="orbit-node node-search">
+              <Search />
+            </span>
+            <span className="orbit-node node-link">
+              <Sparkles />
+            </span>
+            <span className="orbit-node node-share">
+              <Layers3 />
+            </span>
+            <div className="connection-center">
+              <Layers3 size={38} strokeWidth={1.3} />
+              <span>your second brain</span>
+            </div>
+            <span className="connection-note">
+              a few links. a world of possibilities.
+            </span>
+          </div>
+          <div className="connection-copy">
+            <span className="eyebrow">MADE FOR YOUR CURIOUS MIND</span>
+            <h2>
+              Collect a little.
+              <br />
+              <em>Connect a lot.</em>
+            </h2>
+            <p>
+              The best ideas rarely arrive fully formed. They start with
+              something you read, something you watched, something you wanted to
+              come back to.
+            </p>
+            <p>
+              Give those little discoveries a home. Find them when you need
+              them. And share your brain when you’re ready.
+            </p>
+            <Link to={destination} className="action-text">
+              Make room for your next idea <ArrowRight size={17} />
+            </Link>
+          </div>
+        </section>
+        <section className="faq-section section-container" id="questions">
+          <div>
+            <span className="eyebrow">A FEW THINGS YOU MIGHT BE WONDERING</span>
+            <h2>
+              Curious? <em>Good.</em>
+            </h2>
+          </div>
+          <div className="faq-list">
+            {[
+              [
+                "What can I save?",
+                "Save links to articles, videos, social posts, music, code repositories, documents, and more. Your library keeps them together so you can come back whenever inspiration strikes.",
+              ],
+              [
+                "How does the AI help?",
+                "When you add a link, AI helps generate its title and summary. Semantic search also lets you look for an idea in your own words, instead of remembering an exact title.",
+              ],
+              [
+                "Can I share my library?",
+                "Yes. From your dashboard, use Share Brain to create a public link to your saved library. You can remove the link when you no longer want to share it.",
+              ],
+            ].map(([question, answer]) => (
+              <details key={question}>
+                <summary>
+                  {question}
+                  <ChevronDown size={18} />
+                </summary>
+                <p>{answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+        <section className="closing-cta section-container">
+          <span className="eyebrow">
+            <Sparkles size={14} /> YOUR NEXT GREAT IDEA IS ALREADY OUT THERE
+          </span>
+          <h2>
+            Give it somewhere <em>to land.</em>
+          </h2>
+          <Link className="action-primary" to={destination}>
+            Start your second brain <ArrowRight size={17} />
+          </Link>
+          <p>Less scattered. More inspired.</p>
+        </section>
+      </main>
       <Footer />
     </div>
   );
-};
-
-export default HomePage;
+}

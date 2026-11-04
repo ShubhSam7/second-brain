@@ -84,7 +84,7 @@ export interface CreateContentData {
   thumbnail?: string;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;

@@ -22,11 +22,11 @@
   h4,
   h5,
   h6 {
-    @apply text-text-primary tracking-wider;
+    @apply text-text-primary;
   }
 
   h1 {
-    @apply text-5xl md:text-6xl tracking-widest;
+    @apply text-5xl md:text-6xl;
     font-weight: 800;
   }
 

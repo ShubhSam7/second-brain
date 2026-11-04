@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { MouseEventHandler, ReactElement } from "react";
 
 interface ButtonProps {
   variant: "primary" | "secondary";
@@ -6,7 +6,7 @@ interface ButtonProps {
   text: string;
   startIcon?: ReactElement;
   endIcon?: ReactElement;
-  onClick?: (e?: any) => void | Promise<void>;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
   full?: boolean;
   padding?: string;
   disabled?: boolean;

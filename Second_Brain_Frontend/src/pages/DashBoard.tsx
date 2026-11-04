@@ -1,16 +1,26 @@
-import "../index.css";
-import { Button } from "../components/Button";
-import { PlusIcon } from "../icons/PlusIcon";
+import { useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronRight,
+  LayoutGrid,
+  List,
+  LoaderCircle,
+  Menu,
+  Plus,
+  RefreshCw,
+  Share2,
+  Sparkles,
+  X,
+} from "lucide-react";
 import Card from "../components/Card";
-import { ShareIcon } from "../icons/ShareIcon";
 import CreateContentModel from "../components/CreateContentModel";
-import { useState } from "react";
 import SideBar from "../components/SideBar";
 import { SearchBar } from "../components/SearchBar";
 import { useContent } from "../hooks/useContent";
-import { createShareLink, removeShareLink } from "../lib/api";
-import type { CategoryType, ContentType } from "../lib/types";
-import { Menu } from "lucide-react";
+import { createShareLink, getCurrentUser, removeShareLink } from "../lib/api";
+import type { CategoryType, Content, ContentType } from "../lib/types";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
@@ -19,220 +29,318 @@ export default function DashBoard() {
   >("all");
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-
-  // Determine filter type based on the active filter value
-  const getContentFilter = () => {
-    if (activeFilter === "all") return undefined;
-
-    // Check if it's a content type
-    const contentTypes: ContentType[] = [
-      "twitter",
-      "instagram",
-      "linkedin",
-      "youtube",
-      "spotify",
-      "github",
-      "medium",
-      "image",
-      "document",
-      "other",
-    ];
-    if (contentTypes.includes(activeFilter as ContentType)) {
-      return { type: activeFilter as ContentType };
-    }
-
-    // Otherwise it's a category
-    return { category: activeFilter as CategoryType };
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<Content[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchVersion, setSearchVersion] = useState(0);
+  const resetSearch = () => {
+    setSearchResults(null);
+    setSearchLoading(false);
+    setSearchVersion((version) => version + 1);
   };
-
-  const { content, loading, error, fetchContent, removeContent } = useContent(
-    getContentFilter()
+  const [notice, setNotice] = useState("");
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
+  const [sort, setSort] = useState("recent");
+  const filter =
+    activeFilter === "all"
+      ? undefined
+      : activeFilter === "article"
+        ? { category: "article" as CategoryType }
+        : { type: activeFilter as ContentType };
+  const { content, loading, error, fetchContent, removeContent } =
+    useContent(filter);
+  const displayed = useMemo(
+    () =>
+      [...(searchResults ?? content)].sort((a, b) =>
+        sort === "title"
+          ? a.title.localeCompare(b.title)
+          : sort === "oldest"
+            ? Date.parse(a.createdAt) - Date.parse(b.createdAt)
+            : Date.parse(b.createdAt) - Date.parse(a.createdAt),
+      ),
+    [content, searchResults, sort],
   );
-
-  const handleShareBrain = async () => {
+  const titles: Record<string, string> = {
+    all: "All content",
+    article: "Articles",
+    youtube: "YouTube",
+    spotify: "Spotify",
+    twitter: "Twitter",
+    instagram: "Instagram",
+    linkedin: "LinkedIn",
+    github: "GitHub",
+    other: "Other links",
+  };
+  const title =
+    searchResults !== null
+      ? "Search results"
+      : titles[activeFilter] || activeFilter;
+  const handleShare = async () => {
     setIsSharing(true);
+    setNotice("");
     try {
       if (shareLink) {
-        // Remove existing share link
         await removeShareLink();
         setShareLink(null);
-        alert("Share link removed successfully!");
+        setNotice("Your share link has been removed.");
       } else {
-        // Create new share link
         const response = await createShareLink();
-        const fullLink = `${window.location.origin}/brain/${response.hash}`;
-        setShareLink(fullLink);
-        // Copy to clipboard
-        await navigator.clipboard.writeText(fullLink);
-        alert(`Share link created and copied to clipboard!\n${fullLink}`);
+        const link = `${window.location.origin}/brain/${response.hash}`;
+        setShareLink(link);
+        try {
+          await navigator.clipboard.writeText(link);
+          setNotice("Your library link is ready and copied to your clipboard.");
+        } catch {
+          setNotice(
+            "Your library link is ready. Copy it using the field below.",
+          );
+        }
       }
-    } catch (error: any) {
-      alert(error.message || "Failed to manage share link");
+    } catch {
+      setNotice("We couldn’t update your share link. Please try again.");
     } finally {
       setIsSharing(false);
     }
   };
-
-  const handleDeleteContent = async (id: string) => {
-    try {
-      await removeContent(id);
-    } catch (error: any) {
-      alert(error.message || "Failed to delete content");
-      throw error;
-    }
+  const handleDelete = async (id: string) => {
+    await removeContent(id);
+    setSearchResults(
+      (previous) => previous?.filter((item) => item.id !== id) ?? null,
+    );
   };
-
-  const getPageTitle = () => {
-    if (isSearchMode) return "Search Results";
-    if (activeFilter === "all") return "All Notes";
-    return `${
-      activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)
-    } Content`;
-  };
-
-  const handleSearchResults = (results: any[]) => {
-    setSearchResults(results);
-    setIsSearchMode(true);
-  };
-
-  const handleClearSearch = () => {
-    setSearchResults([]);
-    setIsSearchMode(false);
-  };
-
   return (
-    <div className="relative">
-      {/* Blur Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
-          onClick={() => setIsSidebarOpen(false)}
+    <div className="dashboard-page">
+      {sidebarOpen && (
+        <button
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
-
       <SideBar
         activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-        isOpen={isSidebarOpen}
+        onFilterChange={(value) => {
+          setActiveFilter(value);
+          setSearchResults(null);
+          setSearchLoading(false);
+        }}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
-
-      <div className="min-h-screen bg-background-primary">
-        <CreateContentModel
-          open={modelOpen}
-          onClose={() => setModelOpen(false)}
-          onSuccess={fetchContent}
-        />
-
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-8 border-b border-border-muted gap-4">
-          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+      <main className="app-main">
+        <header className="app-topbar">
+          <div>
             <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-lg bg-neutral-900 border border-neutral-800 hover:border-orange-500/50 hover:bg-orange-500/10 transition-all duration-200 flex-shrink-0"
-              title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+              className="sidebar-toggle"
+              aria-label="Open navigation"
+              onClick={() => setSidebarOpen(true)}
             >
-              <Menu className="w-5 h-5 text-neutral-300" />
+              <Menu size={20} />
             </button>
-            <div className="text-2xl sm:text-3xl font-bold text-text-primary tracking-wide truncate">
-              {getPageTitle()}
+            <span>My workspace</span>
+            <ChevronRight size={13} />
+            <strong>{title}</strong>
+          </div>
+          <span className="app-topbar-note">
+            <span className="status-dot" /> A little space for your big ideas
+          </span>
+        </header>
+        <div className="dashboard-content">
+          <div className="dashboard-heading">
+            <div>
+              <span className="eyebrow">
+                YOUR PERSONAL CORNER OF THE INTERNET
+              </span>
+              <h1>
+                {activeFilter === "all" && searchResults === null ? (
+                  <>
+                    A little more connected<span>.</span>
+                  </>
+                ) : (
+                  title
+                )}
+              </h1>
+              <p>
+                {activeFilter === "all"
+                  ? `Welcome back${getCurrentUser() ? `, ${getCurrentUser()}` : ""}. Make room for what inspires you.`
+                  : "The things that caught your eye. All in one place."}
+              </p>
+            </div>
+            <div className="dashboard-actions">
+              <button
+                className="app-secondary"
+                onClick={handleShare}
+                disabled={isSharing}
+              >
+                {isSharing ? (
+                  <LoaderCircle size={16} className="animate-spin" />
+                ) : (
+                  <Share2 size={16} />
+                )}
+                {shareLink ? "Stop sharing" : "Share brain"}
+              </button>
+              <button
+                className="action-primary"
+                onClick={() => setModelOpen(true)}
+              >
+                <Plus size={17} /> Add content
+              </button>
             </div>
           </div>
-          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <Button
-              onClick={handleShareBrain}
-              startIcon={<ShareIcon />}
-              variant="secondary"
-              text={shareLink ? "Remove Share Link" : "Share Brain"}
-              size="md"
-              disabled={isSharing}
-            />
-            <Button
-              onClick={() => setModelOpen(true)}
-              startIcon={<PlusIcon />}
-              variant="primary"
-              text="Add Content"
-              size="md"
-            />
-          </div>
-        </div>
-
-        {/* Search Bar Section */}
-        <div className="p-4 sm:p-8 pb-0">
-          <div className="max-w-7xl mx-auto">
-            <SearchBar onResults={handleSearchResults} />
-            {isSearchMode && (
-              <div className="mt-4">
-                <button
-                  onClick={handleClearSearch}
-                  className="text-sm text-accent-primary hover:text-accent-secondary transition-colors"
+          {notice && (
+            <div className="app-notice" role="status">
+              <Check size={16} />
+              <span>{notice}</span>
+              <button
+                aria-label="Dismiss message"
+                onClick={() => setNotice("")}
+              >
+                <X size={15} />
+              </button>
+            </div>
+          )}
+          {shareLink && (
+            <div className="share-link-field">
+              <label htmlFor="share-link">Public library link</label>
+              <input
+                id="share-link"
+                readOnly
+                value={shareLink}
+                onFocus={(event) => event.target.select()}
+              />
+            </div>
+          )}
+          <SearchBar
+            key={`${activeFilter}-${searchVersion}`}
+            onResults={setSearchResults}
+            onClear={() => setSearchResults(null)}
+            onSearchStart={() => setSearchLoading(true)}
+            onSearchEnd={() => setSearchLoading(false)}
+          />
+          <div className="library-toolbar">
+            <div>
+              <h2>{title}</h2>
+              <span className="content-count">{displayed.length}</span>
+              {searchResults !== null && (
+                <button className="clear-results" onClick={resetSearch}>
+                  <ArrowLeft size={13} /> All content
+                </button>
+              )}
+            </div>
+            <div className="library-controls">
+              <label className="sort-label">
+                <span className="sr-only">Sort content</span>
+                <select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value)}
                 >
-                  ← Back to all content
+                  <option value="recent">Recently added</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="title">Title A–Z</option>
+                </select>
+              </label>
+              <div className="layout-switch">
+                <button
+                  aria-label="Grid view"
+                  aria-pressed={layout === "grid"}
+                  className={layout === "grid" ? "active" : ""}
+                  onClick={() => setLayout("grid")}
+                >
+                  <LayoutGrid size={16} />
+                </button>
+                <button
+                  aria-label="List view"
+                  aria-pressed={layout === "list"}
+                  className={layout === "list" ? "active" : ""}
+                  onClick={() => setLayout("list")}
+                >
+                  <List size={17} />
                 </button>
               </div>
-            )}
+            </div>
           </div>
+          {loading || searchLoading ? (
+            <div className="content-state" role="status">
+              <LoaderCircle size={27} className="animate-spin" />
+              <h3>Making room for your ideas…</h3>
+              <p>Your library will be here in a moment.</p>
+            </div>
+          ) : error && searchResults === null ? (
+            <div className="content-state" role="alert">
+              <RefreshCw size={26} />
+              <h3>Your library couldn’t load.</h3>
+              <p>{error}. Let’s give that another try.</p>
+              <button className="app-secondary" onClick={fetchContent}>
+                <RefreshCw size={15} /> Try again
+              </button>
+            </div>
+          ) : displayed.length === 0 ? (
+            <div className="content-state">
+              <span className="empty-state-icon">
+                <BookOpen size={29} strokeWidth={1.3} />
+              </span>
+              <span className="eyebrow">
+                A LITTLE SPACE. ENDLESS POSSIBILITIES.
+              </span>
+              <h3>
+                {searchResults !== null
+                  ? "That idea is still out there."
+                  : "Good ideas start somewhere."}
+              </h3>
+              <p>
+                {searchResults !== null
+                  ? "Try a different phrase or explore your library."
+                  : "Save your first link. An article, a video, anything that sparks a little curiosity."}
+              </p>
+              <button
+                className="action-primary"
+                onClick={() =>
+                  searchResults !== null ? resetSearch() : setModelOpen(true)
+                }
+              >
+                {searchResults !== null ? (
+                  <ArrowLeft size={16} />
+                ) : (
+                  <Plus size={16} />
+                )}
+                {searchResults !== null
+                  ? "Back to your library"
+                  : "Save your first idea"}
+              </button>
+            </div>
+          ) : (
+            <div
+              className={`content-grid ${layout === "list" ? "content-list" : ""}`}
+            >
+              {displayed.map((item) => (
+                <Card
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  link={item.link}
+                  type={item.type}
+                  description={item.description}
+                  thumbnail={item.thumbnail}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          )}
+          <footer className="dashboard-footer">
+            <Sparkles size={13} />
+            <span>A calmer home for a curious mind.</span>
+            <span>
+              {displayed.length} saved{" "}
+              {displayed.length === 1 ? "idea" : "ideas"}
+            </span>
+          </footer>
         </div>
-
-        <div className="p-4 sm:p-8 w-full flex justify-center">
-          <div className="w-full max-w-7xl">
-            {isSearchMode ? (
-              // Search Results Display
-              searchResults.length === 0 ? (
-                <div className="text-text-secondary text-lg">
-                  No results found. Try a different search query.
-                </div>
-              ) : (
-                <div>
-                  <div className="text-text-secondary text-sm mb-4">
-                    Found {searchResults.length} result
-                    {searchResults.length !== 1 ? "s" : ""}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                    {searchResults.map((item) => (
-                      <Card
-                        key={item.id}
-                        id={item.id}
-                        title={item.title}
-                        type={item.type}
-                        link={item.link}
-                        description={item.description}
-                        onDelete={handleDeleteContent}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )
-            ) : // Normal Content Display
-            loading ? (
-              <div className="text-text-secondary text-lg">
-                Loading your content...
-              </div>
-            ) : error ? (
-              <div className="text-red-400 text-lg">Error: {error}</div>
-            ) : content.length === 0 ? (
-              <div className="text-text-secondary text-lg">
-                No content yet. Click "Add Content" to get started!
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                {content.map((item) => (
-                  <Card
-                    key={item.id}
-                    id={item.id}
-                    title={item.title}
-                    type={item.type}
-                    link={item.link}
-                    description={item.description}
-                    onDelete={handleDeleteContent}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      </main>
+      <CreateContentModel
+        open={modelOpen}
+        onClose={() => setModelOpen(false)}
+        onSuccess={fetchContent}
+      />
     </div>
   );
 }

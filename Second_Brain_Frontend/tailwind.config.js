@@ -17,21 +17,21 @@ module.exports = {
       },
       colors: {
         background: {
-          primary: "#0B0B0D",
-          secondary: "#121214",
+          primary: "#FAF9F6",
+          secondary: "#F3F4ED",
         },
-        surface: "#16161A",
+        surface: "#FFFFFF",
         text: {
-          primary: "#FFFFFF",
-          secondary: "#A1A1AA",
-          muted: "#6B6B73",
+          primary: "#292C27",
+          secondary: "#777F6D",
+          muted: "#9DA491",
         },
         accent: {
-          primary: "#FF6A00",
-          glow: "#FF6A0033",
+          primary: "#CB5A35",
+          glow: "#CB5A3520",
         },
         border: {
-          muted: "#232327",
+          muted: "#E3E6DA",
         },
       },
       letterSpacing: {
