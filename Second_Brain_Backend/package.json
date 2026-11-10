@@ -7,7 +7,13 @@
     "build": "prisma generate && tsc -b",
     "start": "node dist/index.js",
     "dev": "npm run build && npm run start",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "db:search": "npm run build && node dist/scripts/applySearchSchema.js",
+    "search:reindex": "npm run build && node dist/scripts/reindexContent.js",
+    "test:links": "npm run build && node scripts/evaluateLinks.mjs",
+    "test:api": "npm run build && node scripts/searchPreview.mjs",
+    "preview:search": "npm run build && node scripts/searchPreview.mjs --serve"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -20,14 +26,19 @@
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
     "groq-sdk": "^0.37.0",
+    "html-to-text": "^10.0.1",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.15",
+    "@electric-sql/pglite-pgvector": "^0.0.16",
+    "@electric-sql/pglite-socket": "0.2.18",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/html-to-text": "^9.0.4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.0.3",
     "@types/pg": "^8.16.0",

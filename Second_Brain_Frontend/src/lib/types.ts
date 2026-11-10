@@ -82,6 +82,7 @@ export interface CreateContentData {
   type?: ContentType;
   description?: string;
   thumbnail?: string;
+  sourceText?: string;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -110,4 +111,17 @@ export interface CategoryCount {
 export interface CategoriesResponse {
   success: boolean;
   categories: CategoryCount[];
+}
+
+export interface ContentSaveResponse {
+  success: boolean;
+  content: Content;
+  message: string;
+  processing?: {
+    extraction: "content" | "metadata" | "unavailable";
+    coverage: "full" | "partial" | "metadata" | "unavailable";
+    inputSource: "provided" | "link";
+    summary: string;
+    indexed: boolean;
+  };
 }

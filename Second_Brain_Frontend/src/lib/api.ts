@@ -4,6 +4,7 @@ import type {
   SigninData,
   CreateContentData,
   Content,
+  ContentSaveResponse,
   ContentResponse,
   CategoriesResponse,
   CategoryType,
@@ -30,7 +31,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor to handle errors
@@ -44,7 +45,7 @@ api.interceptors.response.use(
       window.location.href = "/signin";
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // ============= AUTHENTICATION =============
@@ -80,9 +81,21 @@ export const getCurrentUser = (): string | null => {
 // ============= CONTENT =============
 
 export const createContent = async (
-  data: CreateContentData
-): Promise<{ success: boolean; content: Content; message: string }> => {
+  data: CreateContentData,
+): Promise<ContentSaveResponse> => {
   const response = await api.post("/content", data);
+  return response.data;
+};
+
+export const updateContentText = async (
+  id: string,
+  sourceText: string,
+  title?: string,
+): Promise<ContentSaveResponse> => {
+  const response = await api.patch(`/content/${encodeURIComponent(id)}`, {
+    sourceText,
+    title,
+  });
   return response.data;
 };
 
@@ -97,7 +110,7 @@ export const getContent = async (filters?: {
 };
 
 export const deleteContent = async (
-  contentId: string
+  contentId: string,
 ): Promise<{ success: boolean; message: string }> => {
   const response = await api.delete("/content", { data: { contentId } });
   return response.data;
@@ -111,15 +124,24 @@ export const getCategories = async (): Promise<CategoriesResponse> => {
 // ============= SEMANTIC SEARCH =============
 
 export const searchContent = async (
-  query: string
+  query: string,
+  signal?: AbortSignal,
 ): Promise<{
   success: boolean;
   query: string;
-  matchType?: "semantic" | "keyword";
-  results: Array<Content & { similarity: number }>;
+  matchType?: "semantic" | "keyword" | "hybrid";
+  semanticAvailable?: boolean;
+  results: Array<
+    Content & {
+      similarity: number | null;
+      score: number;
+      matchType: "semantic" | "keyword" | "hybrid";
+    }
+  >;
 }> => {
   const response = await api.get("/brain/search", {
-    params: { q: query },
+    params: { q: query, limit: 50 },
+    signal,
   });
   return response.data;
 };
@@ -144,7 +166,7 @@ export const removeShareLink = async (): Promise<{
 };
 
 export const getSharedBrain = async (
-  shareLink: string
+  shareLink: string,
 ): Promise<{ success: boolean; username: string; content: Content[] }> => {
   const response = await axios.get(`${API_BASE_URL}/brain/${shareLink}`);
   return response.data;

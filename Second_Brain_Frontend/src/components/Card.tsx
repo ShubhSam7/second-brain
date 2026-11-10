@@ -26,6 +26,7 @@ interface CardProps {
   description?: string;
   thumbnail?: string;
   onDelete?: (id: string) => void | Promise<void>;
+  onEdit?: (id: string) => void;
 }
 const icons = {
   twitter: Twitter,
@@ -47,6 +48,7 @@ export default function Card({
   description,
   thumbnail,
   onDelete,
+  onEdit,
 }: CardProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -123,6 +125,7 @@ export default function Card({
         <span className="saved-card-type">
           <span className="status-dot" />
           {type.replaceAll("-", " ")}
+          <span className="saved-card-domain">{domain}</span>
         </span>
         <h3>
           <a href={href} target="_blank" rel="noopener noreferrer">
@@ -176,6 +179,17 @@ export default function Card({
               "No summary is available for this link yet. Open the original to explore it."}
           </p>
           <div className="dialog-actions">
+            {onEdit && (
+              <button
+                className="app-secondary"
+                onClick={() => {
+                  setExpanded(false);
+                  onEdit(id);
+                }}
+              >
+                Add post text
+              </button>
+            )}
             <button
               className="app-secondary"
               onClick={() => setExpanded(false)}

@@ -34,11 +34,19 @@ model Content {
 
   embedding             Unsupported("vector(768)")?
   embeddingGeneratedAt  DateTime?
+  embeddingModel        String?
+  extractedContent      String?
+  contentSource         String @default("link")
+  searchDocument        Unsupported("tsvector")? @default(dbgenerated())
+  searchText            String? @default(dbgenerated())
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, embeddingModel])
+  @@index([searchDocument], type: Gin)
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([category])
   @@index([type])
   @@index([createdAt])

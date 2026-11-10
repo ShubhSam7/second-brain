@@ -17,9 +17,15 @@ import {
   contentIdSchema,
   shareLinkSchema,
   contentFilterSchema,
+  searchQuerySchema,
+  sourceTextSchema,
 } from "./validation.js";
 import { categorizeLink, isValidUrl, normalizeUrl } from "./linkCategorizer.js";
-import { scrapeAndSummarize, getEmbedding } from "./services/aiPipeline.js";
+import {
+  prepareBookmark,
+  embeddingUpdateQuery,
+} from "./services/bookmarkPreparation.js";
+import { searchLibrary } from "./services/search.js";
 
 // Extend Express Request type to include userId from auth middleware
 declare global {
@@ -34,7 +40,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "512kb" }));
 
 // Prisma error handler utility
 function handlePrismaError(error: any, res: Response): void {
@@ -202,7 +208,8 @@ app.post(
 
       // Validate input with Zod
       const validatedData = createContentSchema.parse(req.body);
-      let { link, title, type, description, thumbnail } = validatedData;
+      let { link, title, type, description, thumbnail, sourceText } =
+        validatedData;
 
       // Normalize URL
       link = normalizeUrl(link);
@@ -222,96 +229,61 @@ app.post(
       const category = linkInfo.category;
       const domain = linkInfo.domain;
 
-      // AI Pipeline: Scrape, Summarize, and Generate Embedding
-      let aiTitle = title;
-      let aiDescription = description;
-      let embeddingVector: number[] | null = null;
+      const prepared = await prepareBookmark({
+        link,
+        title,
+        description,
+        thumbnail,
+        sourceText,
+      });
 
-      try {
-        console.log(`[AI Pipeline] Processing URL: ${link}`);
-
-        // 1. Scrape and Summarize
-        const { title: scrapedTitle, summary } = await scrapeAndSummarize(link);
-
-        console.log(`[AI Pipeline] Scraped title: "${scrapedTitle}"`);
-        console.log(`[AI Pipeline] Generated summary: "${summary}"`);
-
-        // Use AI-generated data if not provided by user
-        aiTitle = title || scrapedTitle;
-        aiDescription = description || summary;
-
-        console.log(`[AI Pipeline] Final title: "${aiTitle}"`);
-        console.log(`[AI Pipeline] Final description: "${aiDescription}"`);
-
-        // 2. Generate Embedding
-        const textToEmbed = `Title: ${aiTitle}\nSummary: ${aiDescription}`;
-        embeddingVector = await getEmbedding(textToEmbed);
-
-        console.log(`[AI Pipeline] Successfully processed: ${aiTitle}`);
-        console.log(
-          `[AI Pipeline] Embedding vector length: ${embeddingVector?.length}`
-        );
-      } catch (aiError: any) {
-        console.error(`[AI Pipeline] COMPLETE ERROR for ${link}:`, aiError);
-        console.error(`[AI Pipeline] Error stack:`, aiError.stack);
-        // Continue without AI data if it fails
-      }
-
-      // Create content with transaction to include embedding
-      console.log(`[Database] Preparing to save content:`);
-      console.log(`  - Title: "${aiTitle || domain || "Untitled"}"`);
-      console.log(`  - Description: "${aiDescription || "undefined"}"`);
-      console.log(`  - Type: ${finalType}`);
-      console.log(`  - Category: ${category}`);
-
-      await prisma.$transaction(async (tx) => {
+      const savedContent = await prisma.$transaction(async (tx) => {
         const content = await tx.content.create({
           data: {
             link,
             type: finalType,
             category,
             domain,
-            title: aiTitle || domain || "Untitled",
-            description: aiDescription,
-            thumbnail,
+            title: prepared.title,
+            description: prepared.description,
+            thumbnail: prepared.thumbnail,
+            extractedContent: prepared.extractedContent,
+            contentSource: prepared.contentSource,
             userId: req.userId!,
           },
         });
 
         console.log(`[Database] Content created with ID: ${content.id}`);
 
-        // Inject embedding vector if available
-        if (embeddingVector && embeddingVector.length === 768) {
-          const embeddingString = `[${embeddingVector.join(",")}]`;
-          await tx.$executeRaw`
-            UPDATE "Content"
-            SET embedding = ${embeddingString}::vector,
-                "embeddingGeneratedAt" = NOW()
-            WHERE id = ${content.id}
-          `;
-        }
+        await tx.$executeRaw(embeddingUpdateQuery(content.id, prepared.vector));
 
-        res.status(201).json({
-          success: true,
-          message: "Content added successfully",
-          content: {
-            id: content.id,
-            link: content.link,
-            type: content.type,
-            category: content.category,
-            domain: content.domain,
-            title: content.title,
-            description: content.description,
-            thumbnail: content.thumbnail,
-            createdAt: content.createdAt,
-          },
-        });
+        return content;
+      });
+      res.status(201).json({
+        success: true,
+        message: "Content added successfully",
+        processing: prepared.processing,
+        content: {
+          id: savedContent.id,
+          link: savedContent.link,
+          type: savedContent.type,
+          category: savedContent.category,
+          domain: savedContent.domain,
+          title: savedContent.title,
+          description: savedContent.description,
+          thumbnail: savedContent.thumbnail,
+          createdAt: savedContent.createdAt,
+          updatedAt: savedContent.updatedAt,
+        },
       });
     } catch (e: any) {
       console.error("[POST /api/v1/content] Error:", e);
 
       if (e.name === "ZodError") {
-        console.error("[POST /api/v1/content] Zod validation errors:", e.errors);
+        console.error(
+          "[POST /api/v1/content] Zod validation errors:",
+          e.errors,
+        );
         res.status(400).json({
           success: false,
           message: "Validation error",
@@ -320,7 +292,11 @@ app.post(
         return;
       }
       if (e.code && e.code.startsWith("P")) {
-        console.error("[POST /api/v1/content] Prisma error:", e.code, e.message);
+        console.error(
+          "[POST /api/v1/content] Prisma error:",
+          e.code,
+          e.message,
+        );
         handlePrismaError(e, res);
         return;
       }
@@ -330,7 +306,7 @@ app.post(
         error: e.message,
       });
     }
-  }
+  },
 );
 
 app.get(
@@ -359,6 +335,19 @@ app.get(
       const [content, total] = await Promise.all([
         prisma.content.findMany({
           where,
+          select: {
+            id: true,
+            link: true,
+            title: true,
+            description: true,
+            type: true,
+            category: true,
+            domain: true,
+            thumbnail: true,
+            userId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
           orderBy: { createdAt: "desc" },
           skip: offset,
           take: limit,
@@ -391,7 +380,97 @@ app.get(
         error: e.message,
       });
     }
-  }
+  },
+);
+
+app.patch(
+  "/api/v1/content/:contentId",
+  auth,
+  async (req: Request, res: Response): Promise<void> => {
+    const validated = sourceTextSchema.safeParse(req.body);
+    if (!validated.success) {
+      res
+        .status(400)
+        .json({
+          success: false,
+          message: "Add post text between 20 and 80,000 characters",
+          errors: validated.error.issues,
+        });
+      return;
+    }
+    try {
+      const existing = await prisma.content.findFirst({
+        where: { id: req.params.contentId, userId: req.userId! },
+      });
+      if (!existing) {
+        res.status(404).json({ success: false, message: "Bookmark not found" });
+        return;
+      }
+      const prepared = await prepareBookmark({
+        link: existing.link,
+        title: validated.data.title || existing.title,
+        sourceText: validated.data.sourceText,
+        thumbnail: existing.thumbnail || undefined,
+      });
+      const content = await prisma.$transaction(async (tx) => {
+        const updated = await tx.content.updateMany({
+          where: {
+            id: existing.id,
+            userId: req.userId!,
+            updatedAt: existing.updatedAt,
+          },
+          data: {
+            title: prepared.title,
+            description: prepared.description,
+            extractedContent: prepared.extractedContent,
+            contentSource: "provided",
+          },
+        });
+        if (!updated.count) return null;
+        await tx.$executeRaw(
+          embeddingUpdateQuery(existing.id, prepared.vector),
+        );
+        return tx.content.findUnique({
+          where: { id: existing.id },
+          select: {
+            id: true,
+            title: true,
+            link: true,
+            description: true,
+            thumbnail: true,
+            type: true,
+            category: true,
+            domain: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
+      });
+      if (!content) {
+        res
+          .status(409)
+          .json({
+            success: false,
+            message:
+              "This bookmark changed while saving. Please reopen it and try again.",
+          });
+        return;
+      }
+      res.json({
+        success: true,
+        content,
+        processing: prepared.processing,
+        message: "Post text saved and search updated",
+      });
+    } catch {
+      res
+        .status(500)
+        .json({
+          success: false,
+          message: "Could not update this bookmark. Please try again.",
+        });
+    }
+  },
 );
 
 app.delete(
@@ -442,7 +521,7 @@ app.delete(
         error: e.message,
       });
     }
-  }
+  },
 );
 
 // ============= SEMANTIC SEARCH ENDPOINT =============
@@ -452,137 +531,21 @@ app.get(
   auth,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { q } = req.query;
-
-      if (!q || typeof q !== "string") {
+      const validated = searchQuerySchema.safeParse(req.query);
+      if (!validated.success) {
         res.status(400).json({
           success: false,
-          message: "Search query (q) is required",
+          message:
+            "Enter a search query of 1–500 characters and a limit of 1–50",
+          errors: validated.error.issues,
         });
         return;
       }
-
-      console.log(`[Semantic Search] Query: "${q}"`);
-
-      // Preprocess query: normalize whitespace, case, and unicode
-      const normalizedQuery = q
-        .trim()
-        .replace(/\s+/g, " ") // Collapse multiple spaces
-        .normalize("NFD") // Unicode normalization
-        .replace(/[\u0300-\u036f]/g, ""); // Remove diacritics
-
-      console.log(`[Semantic Search] Normalized query: "${normalizedQuery}"`);
-
-      // Enhance query for better semantic matching (convert to natural sentence)
-      const enhancedQuery = normalizedQuery.length < 50
-        ? `Information about ${normalizedQuery}, including concepts related to ${normalizedQuery}`
-        : normalizedQuery;
-
-      console.log(`[Semantic Search] Enhanced query: "${enhancedQuery}"`);
-
-      // 1. Generate embedding for the search query
-      let queryVector: number[];
-      try {
-        queryVector = await getEmbedding(enhancedQuery);
-        console.log(`[Semantic Search] Generated query embedding`);
-      } catch (embeddingError: any) {
-        console.error(
-          `[Semantic Search] Embedding failed:`,
-          embeddingError.message
-        );
-        res.status(500).json({
-          success: false,
-          message: "Failed to process search query",
-        });
-        return;
-      }
-
-      // 2. Perform vector similarity search (lowered threshold from 0.4 to 0.35)
-      const embeddingString = `[${queryVector.join(",")}]`;
-
-      let results = await prisma.$queryRaw<
-        Array<{
-          id: string;
-          title: string;
-          link: string;
-          description: string | null;
-          type: string;
-          category: string;
-          domain: string | null;
-          thumbnail: string | null;
-          similarity: number;
-        }>
-      >`
-        SELECT
-          id, title, link, description, type, category, domain, thumbnail,
-          1 - (embedding <=> ${embeddingString}::vector) as similarity
-        FROM "Content"
-        WHERE "userId" = ${req.userId}
-        AND embedding IS NOT NULL
-        AND 1 - (embedding <=> ${embeddingString}::vector) > 0.35
-        ORDER BY similarity DESC
-        LIMIT 10;
-      `;
-
-      console.log(`[Semantic Search] Found ${results.length} semantic results`);
-
-      // 3. Fallback to keyword search if no semantic results found
-      if (results.length === 0) {
-        console.log(`[Semantic Search] No semantic results, falling back to keyword search`);
-
-        const keywordPattern = `%${normalizedQuery.toLowerCase()}%`;
-
-        results = await prisma.$queryRaw<
-          Array<{
-            id: string;
-            title: string;
-            link: string;
-            description: string | null;
-            type: string;
-            category: string;
-            domain: string | null;
-            thumbnail: string | null;
-            similarity: number;
-          }>
-        >`
-          SELECT
-            id, title, link, description, type, category, domain, thumbnail,
-            0.5 as similarity
-          FROM "Content"
-          WHERE "userId" = ${req.userId}
-          AND (
-            LOWER(title) LIKE ${keywordPattern}
-            OR LOWER(description) LIKE ${keywordPattern}
-            OR LOWER(domain) LIKE ${keywordPattern}
-          )
-          ORDER BY
-            CASE
-              WHEN LOWER(title) LIKE ${keywordPattern} THEN 1
-              WHEN LOWER(description) LIKE ${keywordPattern} THEN 2
-              ELSE 3
-            END
-          LIMIT 10;
-        `;
-
-        console.log(`[Semantic Search] Found ${results.length} keyword matches`);
-      }
-
-      res.json({
-        success: true,
-        query: q,
-        matchType: results.length > 0 && results[0].similarity > 0.35 ? "semantic" : "keyword",
-        results: results.map((r) => ({
-          id: r.id,
-          title: r.title,
-          link: r.link,
-          description: r.description,
-          type: r.type,
-          category: r.category,
-          domain: r.domain,
-          thumbnail: r.thumbnail,
-          similarity: Math.round(r.similarity * 100) / 100, // Round to 2 decimals
-        })),
+      const { q, limit } = validated.data;
+      const search = await searchLibrary(req.userId!, q, limit, {
+        query: (query) => prisma.$queryRaw(query),
       });
+      res.json({ success: true, query: q, ...search });
     } catch (e: any) {
       console.error("[Semantic Search] Error:", e.message);
       res.status(500).json({
@@ -591,7 +554,7 @@ app.get(
         error: e.message,
       });
     }
-  }
+  },
 );
 
 // ============= SHARING ENDPOINTS =============
@@ -667,7 +630,7 @@ app.post(
         error: e.message,
       });
     }
-  }
+  },
 );
 
 app.get("/api/v1/brain/:shareLink", async (req, res) => {
@@ -763,7 +726,7 @@ app.get(
         error: e.message,
       });
     }
-  }
+  },
 );
 
 // Root endpoint

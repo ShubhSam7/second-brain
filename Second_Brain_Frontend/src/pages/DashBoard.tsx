@@ -24,6 +24,11 @@ import type { CategoryType, Content, ContentType } from "../lib/types";
 
 export default function DashBoard() {
   const [modelOpen, setModelOpen] = useState(false);
+  const [editingContent, setEditingContent] = useState<Content | null>(null);
+  const openNewContent = () => {
+    setEditingContent(null);
+    setModelOpen(true);
+  };
   const [activeFilter, setActiveFilter] = useState<
     ContentType | CategoryType | "all"
   >("all");
@@ -35,6 +40,7 @@ export default function DashBoard() {
   const [searchVersion, setSearchVersion] = useState(0);
   const resetSearch = () => {
     setSearchResults(null);
+    setSort("recent");
     setSearchLoading(false);
     setSearchVersion((version) => version + 1);
   };
@@ -52,11 +58,13 @@ export default function DashBoard() {
   const displayed = useMemo(
     () =>
       [...(searchResults ?? content)].sort((a, b) =>
-        sort === "title"
-          ? a.title.localeCompare(b.title)
-          : sort === "oldest"
-            ? Date.parse(a.createdAt) - Date.parse(b.createdAt)
-            : Date.parse(b.createdAt) - Date.parse(a.createdAt),
+        sort === "relevance"
+          ? 0
+          : sort === "title"
+            ? a.title.localeCompare(b.title)
+            : sort === "oldest"
+              ? Date.parse(a.createdAt) - Date.parse(b.createdAt)
+              : Date.parse(b.createdAt) - Date.parse(a.createdAt),
       ),
     [content, searchResults, sort],
   );
@@ -122,6 +130,7 @@ export default function DashBoard() {
         onFilterChange={(value) => {
           setActiveFilter(value);
           setSearchResults(null);
+          setSort("recent");
           setSearchLoading(false);
         }}
         isOpen={sidebarOpen}
@@ -179,10 +188,7 @@ export default function DashBoard() {
                 )}
                 {shareLink ? "Stop sharing" : "Share brain"}
               </button>
-              <button
-                className="action-primary"
-                onClick={() => setModelOpen(true)}
-              >
+              <button className="action-primary" onClick={openNewContent}>
                 <Plus size={17} /> Add content
               </button>
             </div>
@@ -212,8 +218,14 @@ export default function DashBoard() {
           )}
           <SearchBar
             key={`${activeFilter}-${searchVersion}`}
-            onResults={setSearchResults}
-            onClear={() => setSearchResults(null)}
+            onResults={(results) => {
+              setSearchResults(results);
+              setSort("relevance");
+            }}
+            onClear={() => {
+              setSearchResults(null);
+              setSort("recent");
+            }}
             onSearchStart={() => setSearchLoading(true)}
             onSearchEnd={() => setSearchLoading(false)}
           />
@@ -234,6 +246,9 @@ export default function DashBoard() {
                   value={sort}
                   onChange={(event) => setSort(event.target.value)}
                 >
+                  {searchResults !== null && (
+                    <option value="relevance">Most relevant</option>
+                  )}
                   <option value="recent">Recently added</option>
                   <option value="oldest">Oldest first</option>
                   <option value="title">Title A–Z</option>
@@ -295,7 +310,7 @@ export default function DashBoard() {
               <button
                 className="action-primary"
                 onClick={() =>
-                  searchResults !== null ? resetSearch() : setModelOpen(true)
+                  searchResults !== null ? resetSearch() : openNewContent()
                 }
               >
                 {searchResults !== null ? (
@@ -322,6 +337,10 @@ export default function DashBoard() {
                   description={item.description}
                   thumbnail={item.thumbnail}
                   onDelete={handleDelete}
+                  onEdit={() => {
+                    setEditingContent(item);
+                    setModelOpen(true);
+                  }}
                 />
               ))}
             </div>
@@ -337,9 +356,15 @@ export default function DashBoard() {
         </div>
       </main>
       <CreateContentModel
+        key={`${modelOpen}-${editingContent?.id || "new"}`}
+        existing={editingContent}
         open={modelOpen}
         onClose={() => setModelOpen(false)}
-        onSuccess={fetchContent}
+        onSuccess={(_content, message) => {
+          setNotice(message);
+          resetSearch();
+          void fetchContent();
+        }}
       />
     </div>
   );
